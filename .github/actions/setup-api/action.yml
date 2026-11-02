@@ -1,0 +1,16 @@
+name: Setup API
+description: Node 24 + api/node_modules (cache du job API · Install)
+
+runs:
+  using: composite
+  steps:
+    - uses: actions/setup-node@v4
+      with:
+        node-version: 24
+
+    - name: Restaurer api/node_modules
+      uses: actions/cache/restore@v4
+      with:
+        path: api/node_modules
+        key: api-node-modules-${{ runner.os }}-node24-${{ hashFiles('api/package-lock.json') }}
+        fail-on-cache-miss: true

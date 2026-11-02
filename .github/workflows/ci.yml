@@ -79,53 +79,91 @@ jobs:
 
   # ---------- API Hono (api/) ----------
 
-  api-typecheck:
-    name: API · Typecheck
+  api-install:
+    name: API · Install
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: api
     steps:
       - uses: actions/checkout@v4
+
       - uses: actions/setup-node@v4
         with:
           node-version: 24
           cache: npm
           cache-dependency-path: api/package-lock.json
-      - run: npm ci
+
+      # api/node_modules est mis en cache (clé = api/package-lock.json) pour les jobs suivants
+      - name: Cache api/node_modules
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: api/node_modules
+          key: api-node-modules-${{ runner.os }}-node24-${{ hashFiles('api/package-lock.json') }}
+
+      - name: npm ci
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: npm ci
+
+  api-format:
+    name: API · Format (Prettier)
+    needs: api-install
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-api
+      - run: npm run format:check
+
+  api-lint:
+    name: API · Lint (ESLint)
+    needs: api-install
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-api
+      - run: npm run lint
+
+  api-typecheck:
+    name: API · Typecheck
+    needs: api-install
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-api
       - run: npm run typecheck
 
   api-test:
     name: API · Tests (Vitest)
+    needs: api-install
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: api
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: api/package-lock.json
-      - run: npm ci
+      - uses: ./.github/actions/setup-api
       - run: npm test
 
   api-health:
     name: API · Build + /health
-    needs: [api-typecheck, api-test]
+    needs: [api-format, api-lint, api-typecheck, api-test]
     runs-on: ubuntu-latest
     defaults:
       run:
         working-directory: api
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 24
-          cache: npm
-          cache-dependency-path: api/package-lock.json
-      - run: npm ci
+      - uses: ./.github/actions/setup-api
       - run: npm run build
 
       - name: Démarrer l'API
