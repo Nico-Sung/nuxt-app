@@ -8,8 +8,7 @@ export function addToWishlist(
   now: Date = new Date(),
 ): WishlistItem[] {
   if (list.some((item) => item.pokemon.id === pokemon.id)) return [...list]
-  const addedAt: number = now.toISOString()
-  return [...list, { pokemon, addedAt }]
+  return [...list, { pokemon, addedAt: now.toISOString() }]
 }
 
 /** Retire l'entrée du Pokémon donné. Ne modifie pas le tableau reçu. */
