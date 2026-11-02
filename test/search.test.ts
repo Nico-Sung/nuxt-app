@@ -35,7 +35,7 @@ describe('searchPokemon', () => {
   })
 
   it('accepte le format #025', () => {
-    expect(names(searchPokemon(LIST, '#25'))).toEqual(['Raichu'])
+    expect(names(searchPokemon(LIST, '#25'))).toEqual(['Pikachu'])
     expect(names(searchPokemon(LIST, '#025'))).toEqual(['Pikachu'])
   })
 
