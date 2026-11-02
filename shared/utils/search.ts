@@ -17,7 +17,7 @@ export const MIN_QUERY_LENGTH = 2
  * Les noms qui commencent par la recherche passent en premier.
  */
 export function searchPokemon(list: readonly Pokemon[], query: string, limit = 20): Pokemon[] {
-  const q = normalizeText(query)
+  const q = normalizeText(query).replace(/^#\s*/, '') // "#025" -> "025"
   if (!q) return []
 
   if (/^\d+$/.test(q)) {

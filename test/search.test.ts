@@ -34,6 +34,11 @@ describe('searchPokemon', () => {
     expect(names(searchPokemon(LIST, '2'))).toEqual(['Ivysaur'])
   })
 
+  it('accepte le format #025', () => {
+    expect(names(searchPokemon(LIST, '#25'))).toEqual(['Pikachu'])
+    expect(names(searchPokemon(LIST, '#025'))).toEqual(['Pikachu'])
+  })
+
   it('met en premier les noms qui commencent par la recherche', () => {
     expect(names(searchPokemon(LIST, 'pi'))).toEqual(['Pikachu', 'Pichu', 'Pikachu Rock Star'])
     expect(names(searchPokemon(LIST, 'chu'))).toEqual(['Pikachu', 'Raichu', 'Pichu', 'Pikachu Rock Star'])
