@@ -1,4 +1,4 @@
-import type { Pokemon } from "#shared/types/pokemon";
+import type { Pokemon } from '#shared/types/pokemon'
 
 /** Ajoute le Pokémon s'il n'y est pas déjà. Ne modifie pas le tableau reçu. */
 export function addPokemon(
@@ -10,7 +10,7 @@ export function addPokemon(
 
 /** Retire le Pokémon d'id donné. Ne modifie pas le tableau reçu. */
 export function removePokemon(list: readonly Pokemon[], id: number): Pokemon[] {
-  return list.filter(p => p.id !== id);
+  return list.filter((p) => p.id !== id)
 }
 
 function isPokemon(value: unknown): value is Pokemon {
