@@ -2,6 +2,8 @@ import type { Pokemon } from '#shared/types/pokemon'
 
 /** Ajoute le Pokémon s'il n'y est pas déjà. Ne modifie pas le tableau reçu. */
 export function addPokemon(list: readonly Pokemon[], pokemon: Pokemon): Pokemon[] {
+  console.log('debug', pokemon)
+  debugger
   return list.some(p => p.id === pokemon.id) ? [...list] : [...list, pokemon]
 }
 
