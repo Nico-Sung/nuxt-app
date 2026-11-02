@@ -14,7 +14,7 @@ function onAdd(pokemon: Pokemon) {
 }
 
 function onRemove(id: number) {
-  const pokemon = list.value.find(p => p.id === id)
+  const pokemon = list.value.find((p) => p.id === id)
   remove(id)
   if (pokemon) announcement.value = `${pokemon.name} retiré de la liste`
 }
@@ -31,7 +31,12 @@ function onClear() {
   <div>
     <header class="header">
       <h1>Pokémon à capturer</h1>
-      <span v-if="loaded" class="total" :aria-label="`${list.length} dans la liste`">{{ list.length }}</span>
+      <span
+        v-if="loaded"
+        class="total"
+        :aria-label="`${list.length} dans la liste`"
+        >{{ list.length }}</span
+      >
     </header>
 
     <main class="main">
@@ -59,7 +64,12 @@ function onClear() {
             Ta liste est vide. Recherche un Pokémon pour l'ajouter.
           </p>
 
-          <button v-if="cards.length" type="button" class="clear" @click="onClear">
+          <button
+            v-if="cards.length"
+            type="button"
+            class="clear"
+            @click="onClear"
+          >
             Tout vider
           </button>
         </template>

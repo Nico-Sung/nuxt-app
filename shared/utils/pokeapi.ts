@@ -1,6 +1,7 @@
 import type { Pokemon, PokeApiListItem } from '../types/pokemon'
 
-const SPRITES_BASE = 'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon'
+const SPRITES_BASE =
+  'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon'
 
 /** Extrait l'id d'une URL PokéAPI, ex. ".../pokemon/25/" -> 25 */
 export function idFromUrl(url: string): number {
@@ -13,7 +14,7 @@ export function idFromUrl(url: string): number {
 export function formatName(name: string): string {
   return name
     .split('-')
-    .map(part => part.charAt(0).toUpperCase() + part.slice(1))
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ')
 }
 

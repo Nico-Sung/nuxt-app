@@ -24,20 +24,23 @@ let timer: ReturnType<typeof setTimeout> | undefined
 let lastRequest = 0
 
 const activeId = computed(() =>
-  activeIndex.value >= 0 ? `result-${results.value[activeIndex.value]?.id}` : undefined,
+  activeIndex.value >= 0
+    ? `result-${results.value[activeIndex.value]?.id}`
+    : undefined,
 )
 
 async function runSearch(q: string) {
   const requestId = ++lastRequest
   status.value = 'loading'
   try {
-    const data = await $fetch<Pokemon[]>('/api/pokemon/search', { query: { q } })
+    const data = await $fetch<Pokemon[]>('/api/pokemon/search', {
+      query: { q },
+    })
     if (requestId !== lastRequest) return // une recherche plus récente a été lancée
     results.value = data
     activeIndex.value = data.length ? 0 : -1
     status.value = 'done'
-  }
-  catch {
+  } catch {
     if (requestId !== lastRequest) return
     results.value = []
     status.value = 'error'
@@ -119,7 +122,7 @@ function onKeydown(event: KeyboardEvent) {
       :aria-expanded="results.length > 0"
       :aria-activedescendant="activeId"
       @keydown="onKeydown"
-    >
+    />
 
     <p v-if="status === 'short'" class="hint">
       Tape au moins {{ MIN_QUERY_LENGTH }} caractères.
@@ -129,15 +132,22 @@ function onKeydown(event: KeyboardEvent) {
     </p>
     <p v-else-if="status === 'error'" class="hint error" role="alert">
       PokéAPI ne répond pas.
-      <button type="button" class="link" @click="retry">
-        Réessayer
-      </button>
+      <button type="button" class="link" @click="retry">Réessayer</button>
     </p>
-    <p v-else-if="status === 'done' && !results.length" class="hint" aria-live="polite">
+    <p
+      v-else-if="status === 'done' && !results.length"
+      class="hint"
+      aria-live="polite"
+    >
       Aucun résultat.
     </p>
 
-    <ul v-show="status === 'done' && results.length" id="search-results" role="listbox" class="results">
+    <ul
+      v-show="status === 'done' && results.length"
+      id="search-results"
+      role="listbox"
+      class="results"
+    >
       <li
         v-for="(pokemon, i) in results"
         :id="`result-${pokemon.id}`"
@@ -150,7 +160,13 @@ function onKeydown(event: KeyboardEvent) {
         @mouseenter="activeIndex = i"
         @click="choose(pokemon)"
       >
-        <img :src="smallSpriteUrl(pokemon.id)" alt="" width="40" height="40" loading="lazy">
+        <img
+          :src="smallSpriteUrl(pokemon.id)"
+          alt=""
+          width="40"
+          height="40"
+          loading="lazy"
+        />
         <span class="num">#{{ String(pokemon.id).padStart(3, '0') }}</span>
         <span class="name">{{ pokemon.name }}</span>
         <span class="action" :class="{ taken: isInList(pokemon.id) }">

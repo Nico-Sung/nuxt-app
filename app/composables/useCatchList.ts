@@ -12,28 +12,36 @@ export function useCatchList() {
       if (loaded.value) return
       try {
         list.value = parseStoredList(localStorage.getItem(STORAGE_KEY))
-      }
-      catch {
+      } catch {
         list.value = []
       }
       loaded.value = true
-      watch(list, (value) => {
-        try {
-          localStorage.setItem(STORAGE_KEY, JSON.stringify(value))
-        }
-        catch {
-          // stockage indisponible (navigation privée, quota) : on ignore
-        }
-      }, { deep: true })
+      watch(
+        list,
+        (value) => {
+          try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify(value))
+          } catch {
+            // stockage indisponible (navigation privée, quota) : on ignore
+          }
+        },
+        { deep: true },
+      )
     })
   }
 
   return {
     list: readonly(list),
     loaded: readonly(loaded),
-    has: (id: number) => list.value.some(p => p.id === id),
-    add: (pokemon: Pokemon) => { list.value = addPokemon(list.value, pokemon) },
-    remove: (id: number) => { list.value = removePokemon(list.value, id) },
-    clear: () => { list.value = [] },
+    has: (id: number) => list.value.some((p) => p.id === id),
+    add: (pokemon: Pokemon) => {
+      list.value = addPokemon(list.value, pokemon)
+    },
+    remove: (id: number) => {
+      list.value = removePokemon(list.value, id)
+    },
+    clear: () => {
+      list.value = []
+    },
   }
 }

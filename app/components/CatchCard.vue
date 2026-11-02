@@ -13,7 +13,9 @@ defineEmits<{
 const imageState = ref<'artwork' | 'small' | 'missing'>('artwork')
 
 const imageSrc = computed(() =>
-  imageState.value === 'artwork' ? props.pokemon.sprite : smallSpriteUrl(props.pokemon.id),
+  imageState.value === 'artwork'
+    ? props.pokemon.sprite
+    : smallSpriteUrl(props.pokemon.id),
 )
 
 function onImageError() {
@@ -32,7 +34,7 @@ function onImageError() {
         height="160"
         loading="lazy"
         @error="onImageError"
-      >
+      />
     </div>
     <span class="num">#{{ String(pokemon.id).padStart(3, '0') }}</span>
     <h3 class="name">

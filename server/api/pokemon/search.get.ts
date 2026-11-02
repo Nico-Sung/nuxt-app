@@ -8,9 +8,12 @@ export default defineEventHandler(async (event): Promise<Pokemon[]> => {
   let index: Pokemon[]
   try {
     index = await getPokemonIndex()
-  }
-  catch (cause) {
-    throw createError({ statusCode: 502, statusMessage: 'PokéAPI indisponible', cause })
+  } catch (cause) {
+    throw createError({
+      statusCode: 502,
+      statusMessage: 'PokéAPI indisponible',
+      cause,
+    })
   }
 
   return searchPokemon(index, query)

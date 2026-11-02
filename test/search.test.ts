@@ -2,7 +2,11 @@ import { describe, expect, it } from 'vitest'
 import type { Pokemon } from '../shared/types/pokemon'
 import { normalizeText, searchPokemon } from '../shared/utils/search'
 
-const make = (id: number, name: string): Pokemon => ({ id, name, sprite: `${id}.png` })
+const make = (id: number, name: string): Pokemon => ({
+  id,
+  name,
+  sprite: `${id}.png`,
+})
 
 const LIST: Pokemon[] = [
   make(2, 'Ivysaur'),
@@ -13,7 +17,7 @@ const LIST: Pokemon[] = [
   make(10080, 'Pikachu Rock Star'),
 ]
 
-const names = (list: Pokemon[]) => list.map(p => p.name)
+const names = (list: Pokemon[]) => list.map((p) => p.name)
 
 describe('normalizeText', () => {
   it('ignore majuscules, accents et tirets', () => {
@@ -40,13 +44,25 @@ describe('searchPokemon', () => {
   })
 
   it('met en premier les noms qui commencent par la recherche', () => {
-    expect(names(searchPokemon(LIST, 'pi'))).toEqual(['Pikachu', 'Pichu', 'Pikachu Rock Star'])
-    expect(names(searchPokemon(LIST, 'chu'))).toEqual(['Pikachu', 'Raichu', 'Pichu', 'Pikachu Rock Star'])
+    expect(names(searchPokemon(LIST, 'pi'))).toEqual([
+      'Pikachu',
+      'Pichu',
+      'Pikachu Rock Star',
+    ])
+    expect(names(searchPokemon(LIST, 'chu'))).toEqual([
+      'Pikachu',
+      'Raichu',
+      'Pichu',
+      'Pikachu Rock Star',
+    ])
     expect(names(searchPokemon(LIST, 'rai'))[0]).toBe('Raichu')
   })
 
   it('ignore la casse et les tirets', () => {
-    expect(names(searchPokemon(LIST, 'PIKA'))).toEqual(['Pikachu', 'Pikachu Rock Star'])
+    expect(names(searchPokemon(LIST, 'PIKA'))).toEqual([
+      'Pikachu',
+      'Pikachu Rock Star',
+    ])
     expect(names(searchPokemon(LIST, 'mr-mime'))).toEqual(['Mr Mime'])
   })
 
