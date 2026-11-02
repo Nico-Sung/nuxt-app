@@ -1,5 +1,5 @@
 name: Setup
-description: Node 24 + node_modules restauré depuis le cache créé par le job Install
+description: Node 24 + node_modules (cache du job Install) + nuxt prepare
 
 runs:
   using: composite
@@ -14,3 +14,8 @@ runs:
         path: node_modules
         key: node-modules-${{ runner.os }}-node24-${{ hashFiles('package-lock.json') }}
         fail-on-cache-miss: true
+
+    # .nuxt dépend du code : régénéré à chaque job (tsconfig, types, config ESLint)
+    - name: nuxt prepare
+      shell: bash
+      run: npx nuxt prepare
