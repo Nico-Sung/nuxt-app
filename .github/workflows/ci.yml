@@ -9,7 +9,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  install:
+    name: Install
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -19,20 +20,61 @@ jobs:
           node-version: 24
           cache: npm
 
-      - name: Install dependencies
+      # node_modules est mis en cache (clé = package-lock.json) pour les jobs suivants
+      - name: Cache node_modules
+        id: cache
+        uses: actions/cache@v4
+        with:
+          path: node_modules
+          key: node-modules-${{ runner.os }}-node24-${{ hashFiles('package-lock.json') }}
+
+      - name: npm ci
+        if: steps.cache.outputs.cache-hit != 'true'
         run: npm ci
 
-      - name: Format
-        run: npm run format:check
+  format:
+    name: Format (Prettier)
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: npm run format:check
 
-      - name: Lint
-        run: npm run lint
+  lint:
+    name: Lint (ESLint)
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: npx nuxt prepare
+      - run: npm run lint
 
-      - name: Typecheck
-        run: npm run typecheck
+  typecheck:
+    name: Typecheck
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: npx nuxt prepare
+      - run: npm run typecheck
 
-      - name: Tests
-        run: npm test
+  test:
+    name: Tests (Vitest)
+    needs: install
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: npm test
 
-      - name: Build
-        run: npm run build
+  build:
+    name: Build
+    needs: [format, lint, typecheck, test]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: npm run build
