@@ -76,3 +76,78 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
       - run: npm run build
+
+  # ---------- API Hono (api/) ----------
+
+  api-typecheck:
+    name: API · Typecheck
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+      - run: npm ci
+      - run: npm run typecheck
+
+  api-test:
+    name: API · Tests (Vitest)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+      - run: npm ci
+      - run: npm test
+
+  api-health:
+    name: API · Build + /health
+    needs: [api-typecheck, api-test]
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: api/package-lock.json
+      - run: npm ci
+      - run: npm run build
+
+      - name: Démarrer l'API
+        run: npm start > api.log 2>&1 &
+        env:
+          PORT: 3001
+          GIT_SHA: ${{ github.sha }}
+
+      - name: GET /health doit répondre 200
+        run: |
+          code=$(curl -s -o health.json -w '%{http_code}' \
+            --retry 10 --retry-connrefused --retry-delay 1 \
+            http://localhost:3001/health)
+          echo "GET /health → HTTP $code"
+          cat health.json; echo
+          test "$code" = 200
+          jq -e \
+            --arg version "$(node -p "require('./package.json').version")" \
+            --arg commit "${GITHUB_SHA::7}" \
+            '.status == "ok" and .version == $version and .commit == $commit' \
+            health.json
+
+      - name: Logs de l'API
+        if: always()
+        run: cat api.log
