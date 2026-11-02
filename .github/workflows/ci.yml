@@ -189,3 +189,34 @@ jobs:
       - name: Logs de l'API
         if: always()
         run: cat api.log
+
+  # ---------- Parcours réel : Nuxt + API Hono ----------
+
+  e2e:
+    name: E2E (Playwright)
+    needs: [build, api-health]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - uses: ./.github/actions/setup-api
+
+      - name: Build Nuxt
+        run: npm run build
+
+      - name: Installer Chromium
+        run: npx playwright install --with-deps chromium
+
+      # Playwright démarre lui-même l'API (:3201) et Nuxt (:3200)
+      - name: Parcours wishlist
+        run: npm run test:e2e
+
+      - name: Rapport Playwright
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            playwright-report
+            test-results
+          retention-days: 7

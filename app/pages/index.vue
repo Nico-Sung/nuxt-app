@@ -28,10 +28,12 @@ async function onAdd(pokemon: Pokemon) {
     } else {
       // La liste a changé côté API (autre onglet, curl…) : on resynchronise.
       await reload()
-      errorMessage.value =
-        result === 'full'
-          ? FULL_MESSAGE
-          : `${pokemon.name} est déjà dans la liste.`
+      if (result === 'full') {
+        // le message « Liste pleine » permanent s'affiche déjà (isFull)
+        announcement.value = FULL_MESSAGE
+      } else {
+        errorMessage.value = `${pokemon.name} est déjà dans la liste.`
+      }
     }
   } catch {
     errorMessage.value = `Impossible d'ajouter ${pokemon.name} : ${API_DOWN}`

@@ -13,7 +13,8 @@
     "lint": "eslint .",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "dev:api": "npm --prefix api run dev"
+    "dev:api": "npm --prefix api run dev",
+    "test:e2e": "playwright test"
   },
   "dependencies": {
     "nuxt": "^4.6.3",
@@ -22,6 +23,7 @@
   },
   "devDependencies": {
     "@nuxt/eslint": "^1.17.0",
+    "@playwright/test": "^1.64.1",
     "eslint": "^10.14.0",
     "prettier": "^3.9.10",
     "vitest": "^5.0.5",
