@@ -1,8 +1,5 @@
-import type {
-  PokeApiPokemonResponse,
-  PokemonDetails,
-} from '#shared/types/pokemon'
-import { toPokemonDetails } from '#shared/utils/pokeapi'
+import type { PokemonDetails } from '#shared/types/pokemon'
+import { fetchPokemonDetails, toHttpError } from '../../lib/pokeapi'
 
 /** Détails d'un Pokémon (stats, types…), mis en cache 7 jours. */
 export default defineCachedEventHandler(
@@ -13,23 +10,9 @@ export default defineCachedEventHandler(
     }
 
     try {
-      const data = await $fetch<PokeApiPokemonResponse>(
-        `https://pokeapi.co/api/v2/pokemon/${Number(raw)}`,
-      )
-      return toPokemonDetails(data)
+      return await fetchPokemonDetails(Number(raw))
     } catch (cause) {
-      const status = (cause as { statusCode?: number }).statusCode
-      if (status === 404) {
-        throw createError({
-          statusCode: 404,
-          statusMessage: 'Pokémon introuvable',
-        })
-      }
-      throw createError({
-        statusCode: 502,
-        statusMessage: 'PokéAPI indisponible',
-        cause,
-      })
+      throw createError({ ...toHttpError(cause), cause })
     }
   },
   {
