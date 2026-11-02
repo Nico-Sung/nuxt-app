@@ -25,7 +25,7 @@ export function addToWishlist(
   if (list.some((item) => item.pokemon.id === pokemon.id)) {
     return { status: 'duplicate', list: [...list] }
   }
-  if (list.length >= MAX_WISHLIST_SIZE) {
+  if (list.length > MAX_WISHLIST_SIZE) {
     return { status: 'full', list: [...list] }
   }
   return {
