@@ -95,7 +95,7 @@ export function createApp({
         )
       case 'added':
         c.header('Location', `/wishlist/${pokemon.id}`)
-        return c.json(result.item, 201)
+        return c.json(result.item, 200)
     }
   })
 
