@@ -54,7 +54,6 @@ export function createApp({
       return c.json<ErrorResponse>({ error: 'Corps invalide' }, 400)
     }
 
-    console.log('debug', pokemon)
     const result = store.add(pokemon)
     switch (result.status) {
       case 'duplicate':

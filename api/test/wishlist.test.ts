@@ -51,7 +51,7 @@ describe('POST /wishlist', () => {
   it('201 : ajoute le Pokémon et renvoie l’entrée créée', async () => {
     const res = await post(pikachu)
 
-    expect(res.status).toBe(200)
+    expect(res.status).toBe(201)
     expect(res.headers.get('Location')).toBe('/wishlist/25')
     const item = (await res.json()) as WishlistItem
     expect(item.pokemon).toEqual(pikachu)
