@@ -1,4 +1,12 @@
-import type { Pokemon, PokeApiListItem } from '../types/pokemon'
+import type {
+  Pokemon,
+  PokeApiListItem,
+  PokeApiPokemonResponse,
+  PokemonDetails,
+  StatName,
+} from '../types/pokemon'
+import { STAT_NAMES } from '../types/pokemon'
+import { isPokemonTypeName } from './types'
 
 const SPRITES_BASE =
   'https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon'
@@ -31,4 +39,29 @@ export function smallSpriteUrl(id: number): string {
 export function toPokemon(item: PokeApiListItem): Pokemon {
   const id = idFromUrl(item.url)
   return { id, name: formatName(item.name), sprite: spriteUrl(id) }
+}
+
+/**
+ * Transforme la réponse de GET /pokemon/{id} en PokemonDetails.
+ * - types triés par slot, types inconnus ignorés (repli sur « normal »)
+ * - stat absente -> 0
+ */
+export function toPokemonDetails(data: PokeApiPokemonResponse): PokemonDetails {
+  const types = [...data.types]
+    .sort((a, b) => a.slot - b.slot)
+    .map((t) => t.type.name)
+    .filter(isPokemonTypeName)
+
+  const byName = new Map(data.stats.map((s) => [s.stat.name, s.base_stat]))
+  const stats = Object.fromEntries(
+    STAT_NAMES.map((name) => [name, byName.get(name) ?? 0]),
+  ) as Record<StatName, number>
+
+  return {
+    id: data.id,
+    types: types.length ? types : ['normal'],
+    stats,
+    height: data.height,
+    weight: data.weight,
+  }
 }
