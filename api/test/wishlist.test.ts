@@ -71,6 +71,7 @@ describe('POST /wishlist', () => {
     expect(res.status).toBe(409)
     expect(await res.json()).toEqual<ErrorResponse>({
       error: 'Pokémon déjà dans la liste',
+      code: 'duplicate',
     })
     expect(await (await getList()).json()).toHaveLength(1)
   })
@@ -85,6 +86,7 @@ describe('POST /wishlist', () => {
     expect(res.status).toBe(409)
     expect(await res.json()).toEqual<ErrorResponse>({
       error: 'Liste pleine (6 max)',
+      code: 'full',
     })
     expect(await (await getList()).json()).toHaveLength(6)
   })
@@ -101,7 +103,10 @@ describe('POST /wishlist', () => {
     const res = await post(body)
 
     expect(res.status).toBe(400)
-    expect(await res.json()).toEqual<ErrorResponse>({ error: 'Corps invalide' })
+    expect(await res.json()).toEqual<ErrorResponse>({
+      error: 'Corps invalide',
+      code: 'invalid_body',
+    })
     expect(await (await getList()).json()).toEqual([])
   })
 })
@@ -125,6 +130,7 @@ describe('DELETE /wishlist/:id', () => {
     expect(res.status).toBe(404)
     expect(await res.json()).toEqual<ErrorResponse>({
       error: 'Pokémon absent de la liste',
+      code: 'not_found',
     })
   })
 
@@ -137,7 +143,10 @@ describe('DELETE /wishlist/:id', () => {
   it.each(['abc', '0', '-1', '2.5'])('400 : id invalide (%s)', async (id) => {
     const res = await del(id)
     expect(res.status).toBe(400)
-    expect(await res.json()).toEqual<ErrorResponse>({ error: 'Id invalide' })
+    expect(await res.json()).toEqual<ErrorResponse>({
+      error: 'Id invalide',
+      code: 'invalid_id',
+    })
   })
 })
 
@@ -153,5 +162,40 @@ describe('isolation', () => {
     await post(pikachu)
     await post(eevee)
     expect(await (await getList()).json()).toHaveLength(2)
+  })
+})
+
+describe('CORS', () => {
+  it('autorise le front Nuxt (origine par défaut)', async () => {
+    const res = await app.request('/wishlist', {
+      method: 'OPTIONS',
+      headers: {
+        Origin: 'http://localhost:3000',
+        'Access-Control-Request-Method': 'POST',
+        'Access-Control-Request-Headers': 'Content-Type',
+      },
+    })
+
+    expect(res.status).toBe(204)
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe(
+      'http://localhost:3000',
+    )
+    expect(res.headers.get('Access-Control-Allow-Methods')).toContain('DELETE')
+  })
+
+  it('utilise l’origine configurée', async () => {
+    const custom = createApp({
+      version: 'test',
+      commit: 'test',
+      corsOrigin: 'https://pokemon.example',
+    })
+    const res = await custom.request('/wishlist', {
+      headers: { Origin: 'https://pokemon.example' },
+    })
+
+    expect(res.status).toBe(200)
+    expect(res.headers.get('Access-Control-Allow-Origin')).toBe(
+      'https://pokemon.example',
+    )
   })
 })

@@ -12,7 +12,8 @@
     "typecheck": "nuxi typecheck",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "dev:api": "npm --prefix api run dev"
   },
   "dependencies": {
     "nuxt": "^4.6.3",

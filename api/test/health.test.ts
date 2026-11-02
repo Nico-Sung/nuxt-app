@@ -38,7 +38,10 @@ describe('routes inconnues', () => {
     const res = await app.request('/nope')
 
     expect(res.status).toBe(404)
-    expect(await res.json()).toEqual({ error: 'Not Found' })
+    expect(await res.json()).toEqual({
+      error: 'Not Found',
+      code: 'route_not_found',
+    })
   })
 })
 

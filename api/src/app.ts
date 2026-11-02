@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { cors } from 'hono/cors'
 import { shortSha, VERSION } from './version.js'
 import {
   MAX_WISHLIST_SIZE,
@@ -12,15 +13,29 @@ export interface HealthResponse {
   commit: string
 }
 
+/** Codes d'erreur lisibles par le front. */
+export type ErrorCode =
+  | 'invalid_body'
+  | 'duplicate'
+  | 'full'
+  | 'invalid_id'
+  | 'not_found'
+  | 'route_not_found'
+
 export interface ErrorResponse {
   error: string
+  code: ErrorCode
 }
+
+export const DEFAULT_CORS_ORIGIN = 'http://localhost:3000'
 
 export interface AppOptions {
   version: string
   commit: string
   /** Stockage de la liste ; un store neuf par défaut (utile pour isoler les tests). */
   store?: WishlistStore
+  /** Origine autorisée à appeler l'API depuis un navigateur (le front Nuxt). */
+  corsOrigin?: string
 }
 
 /** "25" -> 25 ; tout ce qui n'est pas un entier positif -> null. */
@@ -28,12 +43,27 @@ function parseId(raw: string): number | null {
   return /^[1-9]\d*$/.test(raw) ? Number(raw) : null
 }
 
+const error = (code: ErrorCode, message: string): ErrorResponse => ({
+  error: message,
+  code,
+})
+
 export function createApp({
   version,
   commit,
   store = new WishlistStore(),
+  corsOrigin = DEFAULT_CORS_ORIGIN,
 }: AppOptions) {
   const app = new Hono()
+
+  app.use(
+    '*',
+    cors({
+      origin: corsOrigin,
+      allowMethods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
+      allowHeaders: ['Content-Type'],
+    }),
+  )
 
   app.get('/health', (c) =>
     c.json<HealthResponse>({ status: 'ok', version, commit }),
@@ -46,24 +76,21 @@ export function createApp({
     try {
       body = await c.req.json()
     } catch {
-      return c.json<ErrorResponse>({ error: 'Corps invalide' }, 400)
+      return c.json(error('invalid_body', 'Corps invalide'), 400)
     }
 
     const pokemon = parsePokemonInput(body)
     if (!pokemon) {
-      return c.json<ErrorResponse>({ error: 'Corps invalide' }, 400)
+      return c.json(error('invalid_body', 'Corps invalide'), 400)
     }
 
     const result = store.add(pokemon)
     switch (result.status) {
       case 'duplicate':
-        return c.json<ErrorResponse>(
-          { error: 'Pokémon déjà dans la liste' },
-          409,
-        )
+        return c.json(error('duplicate', 'Pokémon déjà dans la liste'), 409)
       case 'full':
-        return c.json<ErrorResponse>(
-          { error: `Liste pleine (${MAX_WISHLIST_SIZE} max)` },
+        return c.json(
+          error('full', `Liste pleine (${MAX_WISHLIST_SIZE} max)`),
           409,
         )
       case 'added':
@@ -75,23 +102,24 @@ export function createApp({
   app.delete('/wishlist/:id', (c) => {
     const id = parseId(c.req.param('id'))
     if (id === null) {
-      return c.json<ErrorResponse>({ error: 'Id invalide' }, 400)
+      return c.json(error('invalid_id', 'Id invalide'), 400)
     }
 
     const removed = store.remove(id)
     if (!removed) {
-      return c.json<ErrorResponse>({ error: 'Pokémon absent de la liste' }, 404)
+      return c.json(error('not_found', 'Pokémon absent de la liste'), 404)
     }
     return c.json(removed, 200)
   })
 
-  app.notFound((c) => c.json<ErrorResponse>({ error: 'Not Found' }, 404))
+  app.notFound((c) => c.json(error('route_not_found', 'Not Found'), 404))
 
   return app
 }
 
-/** App configurée à partir de package.json et de la variable GIT_SHA. */
+/** App configurée à partir de package.json et des variables GIT_SHA, CORS_ORIGIN. */
 export const app = createApp({
   version: VERSION,
   commit: shortSha(process.env.GIT_SHA),
+  corsOrigin: process.env.CORS_ORIGIN || DEFAULT_CORS_ORIGIN,
 })

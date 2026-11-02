@@ -1,53 +1,65 @@
 import type { Pokemon } from '#shared/types/pokemon'
 import type { WishlistItem } from '#shared/types/wishlist'
-import type { AddStatus } from '~/utils/wishlist'
+import type { AddStatus } from '~/utils/wishlistApi'
 
-const STORAGE_KEY = 'pokemon-a-capturer'
+export type WishlistStatus = 'loading' | 'ready' | 'error'
 
+/**
+ * Liste de Pokémon à capturer, stockée par l'API Hono (source de vérité).
+ * L'état local n'est mis à jour qu'après la réponse de l'API.
+ */
 export function useWishlist() {
+  const apiBase = useRuntimeConfig().public.apiBase
   const items = useState<WishlistItem[]>('wishlist', () => [])
-  /** Passe à true une fois la liste relue depuis le localStorage (côté navigateur). */
-  const loaded = useState('wishlist-loaded', () => false)
+  const status = useState<WishlistStatus>('wishlist-status', () => 'loading')
+
+  /** Recharge depuis l'API ; si la liste est déjà affichée, pas d'état « chargement » (évite le clignotement). */
+  async function reload() {
+    if (status.value !== 'ready') status.value = 'loading'
+    try {
+      items.value = await fetchWishlist(apiBase)
+      status.value = 'ready'
+    } catch {
+      status.value = 'error'
+    }
+  }
 
   if (import.meta.client) {
     onMounted(() => {
-      if (loaded.value) return
-      try {
-        items.value = parseStoredWishlist(localStorage.getItem(STORAGE_KEY))
-      } catch {
-        items.value = []
-      }
-      loaded.value = true
-      watch(
-        items,
-        (value) => {
-          try {
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(value))
-          } catch {
-            // stockage indisponible (navigation privée, quota) : on ignore
-          }
-        },
-        { deep: true },
-      )
+      if (status.value !== 'ready') reload()
     })
+  }
+
+  async function add(pokemon: Pokemon): Promise<AddStatus> {
+    const result = await postWishlist(apiBase, pokemon)
+    if (result.status === 'added') {
+      items.value = [...items.value, result.item]
+    }
+    return result.status
+  }
+
+  async function remove(pokemonId: number) {
+    await deleteWishlist(apiBase, pokemonId)
+    items.value = removeFromWishlist(items.value, pokemonId)
+  }
+
+  /** L'API n'a pas de route « tout vider » : un DELETE par Pokémon (6 max). */
+  async function clear() {
+    for (const item of [...items.value]) {
+      await remove(item.pokemon.id)
+    }
   }
 
   return {
     items: readonly(items),
-    loaded: readonly(loaded),
+    status: readonly(status),
+    loaded: computed(() => status.value === 'ready'),
+    isFull: computed(() => isWishlistFull(items.value)),
     has: (pokemonId: number) =>
       items.value.some((item) => item.pokemon.id === pokemonId),
-    isFull: computed(() => isWishlistFull(items.value)),
-    add: (pokemon: Pokemon): AddStatus => {
-      const result = addToWishlist(items.value, pokemon)
-      items.value = result.list
-      return result.status
-    },
-    remove: (pokemonId: number) => {
-      items.value = removeFromWishlist(items.value, pokemonId)
-    },
-    clear: () => {
-      items.value = []
-    },
+    reload,
+    add,
+    remove,
+    clear,
   }
 }

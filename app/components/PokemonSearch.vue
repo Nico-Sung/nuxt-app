@@ -7,13 +7,16 @@ const props = defineProps<{
   isInList: (id: number) => boolean
   /** Liste pleine : plus aucun ajout possible. */
   isFull: boolean
+  /** Pokémon en cours d'ajout (requête vers l'API en cours). */
+  pendingId: number | null
 }>()
 
 function canAdd(id: number): boolean {
-  return !props.isInList(id) && !props.isFull
+  return props.pendingId === null && !props.isInList(id) && !props.isFull
 }
 
 function actionLabel(id: number): string {
+  if (props.pendingId === id) return 'Ajout…'
   if (props.isInList(id)) return 'Dans la liste'
   if (props.isFull) return 'Liste pleine'
   return 'Ajouter'
