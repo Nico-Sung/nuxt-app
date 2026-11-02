@@ -1,7 +1,8 @@
+/** Un Pokémon tel que l'app l'utilise (construit à partir de PokéAPI). */
 export interface Pokemon {
-  id: number
-  name: string
-  sprite: string
+  readonly id: number
+  readonly name: string
+  readonly sprite: string
 }
 
 /** Entrée renvoyée par GET https://pokeapi.co/api/v2/pokemon */

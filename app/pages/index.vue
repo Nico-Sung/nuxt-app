@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import type { Pokemon } from '#shared/types/pokemon'
 
-const { list, loaded, has, add, remove, clear } = useCatchList()
+const { items, loaded, has, add, remove, clear } = useWishlist()
 
 /** Les derniers ajoutés en premier. */
-const cards = computed(() => [...list.value].reverse())
+const cards = computed(() => sortByMostRecent(items.value))
 
 const announcement = ref('')
 
@@ -13,10 +13,10 @@ function onAdd(pokemon: Pokemon) {
   announcement.value = `${pokemon.name} ajouté à la liste`
 }
 
-function onRemove(id: number) {
-  const pokemon = list.value.find((p) => p.id === id)
-  remove(id)
-  if (pokemon) announcement.value = `${pokemon.name} retiré de la liste`
+function onRemove(pokemonId: number) {
+  const item = items.value.find((i) => i.pokemon.id === pokemonId)
+  remove(pokemonId)
+  if (item) announcement.value = `${item.pokemon.name} retiré de la liste`
 }
 
 function onClear() {
@@ -34,8 +34,8 @@ function onClear() {
       <span
         v-if="loaded"
         class="total"
-        :aria-label="`${list.length} dans la liste`"
-        >{{ list.length }}</span
+        :aria-label="`${items.length} dans la liste`"
+        >{{ items.length }}</span
       >
     </header>
 
@@ -48,15 +48,15 @@ function onClear() {
 
       <section class="list" aria-labelledby="list-title">
         <h2 id="list-title">
-          Ma liste<span v-if="loaded"> ({{ list.length }})</span>
+          Ma liste<span v-if="loaded"> ({{ items.length }})</span>
         </h2>
 
         <template v-if="loaded">
           <div v-if="cards.length" class="grid">
-            <CatchCard
-              v-for="pokemon in cards"
-              :key="pokemon.id"
-              :pokemon="pokemon"
+            <WishlistCard
+              v-for="item in cards"
+              :key="item.pokemon.id"
+              :item="item"
               @remove="onRemove"
             />
           </div>

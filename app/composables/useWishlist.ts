@@ -1,23 +1,24 @@
 import type { Pokemon } from '#shared/types/pokemon'
+import type { WishlistItem } from '#shared/types/wishlist'
 
 const STORAGE_KEY = 'pokemon-a-capturer'
 
-export function useCatchList() {
-  const list = useState<Pokemon[]>('catch-list', () => [])
+export function useWishlist() {
+  const items = useState<WishlistItem[]>('wishlist', () => [])
   /** Passe à true une fois la liste relue depuis le localStorage (côté navigateur). */
-  const loaded = useState('catch-list-loaded', () => false)
+  const loaded = useState('wishlist-loaded', () => false)
 
   if (import.meta.client) {
     onMounted(() => {
       if (loaded.value) return
       try {
-        list.value = parseStoredList(localStorage.getItem(STORAGE_KEY))
+        items.value = parseStoredWishlist(localStorage.getItem(STORAGE_KEY))
       } catch {
-        list.value = []
+        items.value = []
       }
       loaded.value = true
       watch(
-        list,
+        items,
         (value) => {
           try {
             localStorage.setItem(STORAGE_KEY, JSON.stringify(value))
@@ -31,17 +32,18 @@ export function useCatchList() {
   }
 
   return {
-    list: readonly(list),
+    items: readonly(items),
     loaded: readonly(loaded),
-    has: (id: number) => list.value.some((p) => p.id === id),
+    has: (pokemonId: number) =>
+      items.value.some((item) => item.pokemon.id === pokemonId),
     add: (pokemon: Pokemon) => {
-      list.value = addPokemon(list.value, pokemon)
+      items.value = addToWishlist(items.value, pokemon)
     },
-    remove: (id: number) => {
-      list.value = removePokemon(list.value, id)
+    remove: (pokemonId: number) => {
+      items.value = removeFromWishlist(items.value, pokemonId)
     },
     clear: () => {
-      list.value = []
+      items.value = []
     },
   }
 }

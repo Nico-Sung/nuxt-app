@@ -1,21 +1,23 @@
 <script setup lang="ts">
-import type { Pokemon } from '#shared/types/pokemon'
+import type { WishlistItem } from '#shared/types/wishlist'
 import { smallSpriteUrl } from '#shared/utils/pokeapi'
 
 const props = defineProps<{
-  pokemon: Pokemon
+  item: WishlistItem
 }>()
 
 defineEmits<{
-  remove: [id: number]
+  remove: [pokemonId: number]
 }>()
+
+const pokemon = computed(() => props.item.pokemon)
 
 const imageState = ref<'artwork' | 'small' | 'missing'>('artwork')
 
 const imageSrc = computed(() =>
   imageState.value === 'artwork'
-    ? props.pokemon.sprite
-    : smallSpriteUrl(props.pokemon.id),
+    ? pokemon.value.sprite
+    : smallSpriteUrl(pokemon.value.id),
 )
 
 function onImageError() {
