@@ -51,7 +51,7 @@ describe('POST /wishlist', () => {
   it('201 : ajoute le Pokémon et renvoie l’entrée créée', async () => {
     const res = await post(pikachu)
 
-    expect(res.status).toBe(200)
+    expect(res.status).toBe(201)
     expect(res.headers.get('Location')).toBe('/wishlist/25')
     const item = (await res.json()) as WishlistItem
     expect(item.pokemon).toEqual(pikachu)
@@ -79,7 +79,7 @@ describe('POST /wishlist', () => {
   it('409 : refuse un 7ᵉ Pokémon (règle des 6)', async () => {
     for (let id = 1; id <= MAX_WISHLIST_SIZE; id++) {
       const res = await post({ id, name: `Pokemon ${id}`, sprite: '' })
-      expect(res.status).toBe(200)
+      expect(res.status).toBe(201)
     }
 
     const res = await post(pikachu)
