@@ -1,16 +1,24 @@
 <script setup lang="ts">
 import type { Pokemon } from '#shared/types/pokemon'
 
-const { items, loaded, has, add, remove, clear } = useWishlist()
+const { items, loaded, isFull, has, add, remove, clear } = useWishlist()
 
 /** Les derniers ajoutés en premier. */
 const cards = computed(() => sortByMostRecent(items.value))
 
 const announcement = ref('')
 
+const FULL_MESSAGE = `Liste pleine (${MAX_WISHLIST_SIZE} Pokémon max) : retire un Pokémon pour en ajouter un autre.`
+
 function onAdd(pokemon: Pokemon) {
-  add(pokemon)
-  announcement.value = `${pokemon.name} ajouté à la liste`
+  const status = add(pokemon)
+  if (status === 'added') {
+    announcement.value = isFull.value
+      ? `${pokemon.name} ajouté. ${FULL_MESSAGE}`
+      : `${pokemon.name} ajouté à la liste`
+  } else if (status === 'full') {
+    announcement.value = FULL_MESSAGE
+  }
 }
 
 function onRemove(pokemonId: number) {
@@ -34,8 +42,8 @@ function onClear() {
       <span
         v-if="loaded"
         class="total"
-        :aria-label="`${items.length} dans la liste`"
-        >{{ items.length }}</span
+        :aria-label="`${items.length} sur ${MAX_WISHLIST_SIZE} dans la liste`"
+        >{{ items.length }} / {{ MAX_WISHLIST_SIZE }}</span
       >
     </header>
 
@@ -44,11 +52,14 @@ function onClear() {
         {{ announcement }}
       </p>
 
-      <PokemonSearch :is-in-list="has" @add="onAdd" />
+      <PokemonSearch :is-in-list="has" :is-full="isFull" @add="onAdd" />
+      <p v-if="loaded && isFull" class="full-notice">{{ FULL_MESSAGE }}</p>
 
       <section class="list" aria-labelledby="list-title">
         <h2 id="list-title">
-          Ma liste<span v-if="loaded"> ({{ items.length }})</span>
+          Ma liste<span v-if="loaded">
+            ({{ items.length }}/{{ MAX_WISHLIST_SIZE }})</span
+          >
         </h2>
 
         <template v-if="loaded">
@@ -139,6 +150,13 @@ h2 {
   .grid {
     grid-template-columns: 1fr;
   }
+}
+
+.full-notice {
+  max-width: 720px;
+  margin: 8px auto 0;
+  font-size: 0.9rem;
+  color: var(--red);
 }
 
 .empty {

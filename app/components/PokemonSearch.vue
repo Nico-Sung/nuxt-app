@@ -5,7 +5,19 @@ import { MIN_QUERY_LENGTH } from '#shared/utils/search'
 
 const props = defineProps<{
   isInList: (id: number) => boolean
+  /** Liste pleine : plus aucun ajout possible. */
+  isFull: boolean
 }>()
+
+function canAdd(id: number): boolean {
+  return !props.isInList(id) && !props.isFull
+}
+
+function actionLabel(id: number): string {
+  if (props.isInList(id)) return 'Dans la liste'
+  if (props.isFull) return 'Liste pleine'
+  return 'Ajouter'
+}
 
 const emit = defineEmits<{
   add: [pokemon: Pokemon]
@@ -74,7 +86,7 @@ function retry() {
 }
 
 function choose(pokemon: Pokemon) {
-  if (props.isInList(pokemon.id)) return
+  if (!canAdd(pokemon.id)) return
   emit('add', pokemon)
 }
 
@@ -156,7 +168,7 @@ function onKeydown(event: KeyboardEvent) {
         class="result"
         :class="{ active: i === activeIndex }"
         :aria-selected="i === activeIndex"
-        :aria-disabled="isInList(pokemon.id)"
+        :aria-disabled="!canAdd(pokemon.id)"
         @mouseenter="activeIndex = i"
         @click="choose(pokemon)"
       >
@@ -169,8 +181,8 @@ function onKeydown(event: KeyboardEvent) {
         />
         <span class="num">#{{ String(pokemon.id).padStart(3, '0') }}</span>
         <span class="name">{{ pokemon.name }}</span>
-        <span class="action" :class="{ taken: isInList(pokemon.id) }">
-          {{ isInList(pokemon.id) ? 'Dans la liste' : 'Ajouter' }}
+        <span class="action" :class="{ taken: !canAdd(pokemon.id) }">
+          {{ actionLabel(pokemon.id) }}
         </span>
       </li>
     </ul>

@@ -1,5 +1,6 @@
 import type { Pokemon } from '#shared/types/pokemon'
 import type { WishlistItem } from '#shared/types/wishlist'
+import type { AddStatus } from '~/utils/wishlist'
 
 const STORAGE_KEY = 'pokemon-a-capturer'
 
@@ -36,8 +37,11 @@ export function useWishlist() {
     loaded: readonly(loaded),
     has: (pokemonId: number) =>
       items.value.some((item) => item.pokemon.id === pokemonId),
-    add: (pokemon: Pokemon) => {
-      items.value = addToWishlist(items.value, pokemon)
+    isFull: computed(() => isWishlistFull(items.value)),
+    add: (pokemon: Pokemon): AddStatus => {
+      const result = addToWishlist(items.value, pokemon)
+      items.value = result.list
+      return result.status
     },
     remove: (pokemonId: number) => {
       items.value = removeFromWishlist(items.value, pokemonId)

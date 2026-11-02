@@ -1,14 +1,41 @@
 import type { Pokemon } from '#shared/types/pokemon'
 import type { WishlistItem } from '#shared/types/wishlist'
 
-/** Ajoute le Pokémon s'il n'y est pas déjà. Ne modifie pas le tableau reçu. */
+/** Nombre maximum de Pokémon dans la liste (une équipe). */
+export const MAX_WISHLIST_SIZE = 6
+
+export type AddStatus = 'added' | 'duplicate' | 'full'
+
+export interface AddResult {
+  readonly status: AddStatus
+  readonly list: WishlistItem[]
+}
+
+/**
+ * Ajoute le Pokémon à la liste. Ne modifie pas le tableau reçu.
+ * - déjà présent -> 'duplicate' (liste inchangée)
+ * - liste pleine (MAX_WISHLIST_SIZE) -> 'full' (liste inchangée)
+ * - sinon -> 'added'
+ */
 export function addToWishlist(
   list: readonly WishlistItem[],
   pokemon: Pokemon,
   now: Date = new Date(),
-): WishlistItem[] {
-  if (list.some((item) => item.pokemon.id === pokemon.id)) return [...list]
-  return [...list, { pokemon, addedAt: now.toISOString() }]
+): AddResult {
+  if (list.some((item) => item.pokemon.id === pokemon.id)) {
+    return { status: 'duplicate', list: [...list] }
+  }
+  if (list.length >= MAX_WISHLIST_SIZE) {
+    return { status: 'full', list: [...list] }
+  }
+  return {
+    status: 'added',
+    list: [...list, { pokemon, addedAt: now.toISOString() }],
+  }
+}
+
+export function isWishlistFull(list: readonly WishlistItem[]): boolean {
+  return list.length >= MAX_WISHLIST_SIZE
 }
 
 /** Retire l'entrée du Pokémon donné. Ne modifie pas le tableau reçu. */
@@ -59,6 +86,7 @@ function toItem(pokemon: Pokemon, addedAt: string): WishlistItem {
  * - JSON absent, corrompu ou qui n'est pas un tableau -> []
  * - entrées invalides ignorées, doublons supprimés
  * - ancien format (Pokemon[]) converti en WishlistItem daté de `now`
+ * - au-delà de MAX_WISHLIST_SIZE, seules les premières entrées sont gardées
  */
 export function parseStoredWishlist(
   raw: string | null,
@@ -76,6 +104,7 @@ export function parseStoredWishlist(
 
   const items: WishlistItem[] = []
   for (const entry of parsed) {
+    if (items.length >= MAX_WISHLIST_SIZE) break
     let item: WishlistItem | null = null
     if (isWishlistItem(entry)) item = toItem(entry.pokemon, entry.addedAt)
     else if (isPokemon(entry)) item = toItem(entry, now.toISOString())
