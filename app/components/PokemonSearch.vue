@@ -113,7 +113,7 @@ function onKeydown(event: KeyboardEvent) {
       role="combobox"
       autocomplete="off"
       spellcheck="false"
-      placeholder="Rechercher un Pokémon (nom ou n°)"
+      placeholder="Rechercher un Pokémon (nom, n° ou #025)"
       aria-autocomplete="list"
       aria-controls="search-results"
       :aria-expanded="results.length > 0"
