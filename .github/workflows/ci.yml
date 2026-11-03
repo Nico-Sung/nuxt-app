@@ -70,12 +70,25 @@ jobs:
 
   build:
     name: Build
-    needs: [format, lint, typecheck, test]
+    needs: [format, lint, typecheck, test, i18n]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
       - run: npm run build
+
+  # ---------- Langues : chaque *.json comparé à en.json (front et API) ----------
+
+  i18n:
+    name: i18n (clés des locales)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      # Script sans dépendance : pas besoin de npm ci
+      - run: npm run i18n:check
 
   # ---------- API Hono (api/) ----------
 
@@ -185,7 +198,7 @@ jobs:
 
   api-health:
     name: API · Build + /health
-    needs: [api-format, api-lint, api-typecheck, api-test, api-test-db]
+    needs: [api-format, api-lint, api-typecheck, api-test, api-test-db, i18n]
     runs-on: ubuntu-latest
     defaults:
       run:
