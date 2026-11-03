@@ -314,6 +314,9 @@ jobs:
       # Nuxt compilé en SSR (preset vercel) dans la CI ; GITHUB_SHA -> /api/health
       - name: Build
         run: npx -y "$VERCEL_CLI" build --prod --token="$VERCEL_TOKEN"
+        env:
+          # Sans ça, Nitro détecte GitHub Actions et compile pour un serveur Node.
+          NITRO_PRESET: vercel
 
       - name: Déploiement
         run: npx -y "$VERCEL_CLI" deploy --prebuilt --prod --token="$VERCEL_TOKEN"
