@@ -84,6 +84,7 @@
   "profile": {
     "back": "← Ma liste",
     "height": "Taille",
+    "weight": "Poids",
     "abilities": "Talents",
     "hidden": "(caché)",
     "baseStats": "Statistiques de base"
