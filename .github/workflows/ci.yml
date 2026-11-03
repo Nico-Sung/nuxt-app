@@ -317,16 +317,14 @@ jobs:
         env:
           # Sans ça, Nitro détecte GitHub Actions et compile pour un serveur Node.
           NITRO_PRESET: vercel
-          # Fiches /pokemon/<nom> générées en HTML au build (liste via PokéAPI).
-          PRERENDER_POKEMON: '1'
+          # Pas de fiches générées au build ici (PRERENDER_POKEMON) : le plan
+          # gratuit de Vercel limite l'envoi à 5 000 fichiers par 24 h et les
+          # 1 025 fiches en font ~2 050 par déploiement. Sur Vercel, les fiches
+          # sont rendues à la demande (SSR) ; la version générée au build est
+          # servie par CloudFront (job deploy-static).
 
-      - name: Fiches générées (avant l'envoi)
-        run: |
-          count=$(find .vercel/output/static/pokemon -name index.html | wc -l)
-          echo "$count fiches HTML générées"
-          test "$count" -ge 1025
-          grep -q 'Pikachu' .vercel/output/static/pokemon/pikachu/index.html
-          grep -q 'Statik' .vercel/output/static/pokemon/pikachu/index.html
+      - name: Taille de l'envoi
+        run: echo "$(find .vercel/output -type f | wc -l) fichiers à envoyer"
 
       - name: Déploiement
         run: npx -y "$VERCEL_CLI" deploy --prebuilt --prod --token="$VERCEL_TOKEN"
@@ -346,13 +344,14 @@ jobs:
             sleep 3
           done
 
-      - name: Les fiches en ligne sont les fichiers générés
+      - name: Les fiches en ligne (rendu serveur)
         env:
           PRODUCTION_URL: ${{ vars.PRODUCTION_URL }}
         run: |
           curl -s -D headers.txt -o pikachu.html "$PRODUCTION_URL/pokemon/pikachu"
-          grep -iE '^(HTTP|x-vercel-cache)' headers.txt
+          grep -iE '^HTTP' headers.txt
           grep -qi '^HTTP/.* 200' headers.txt
+          # la fiche arrive déjà remplie dans le HTML (SSR)
           grep -q 'Statik' pikachu.html
           # un nom inconnu reste rendu par le serveur, avec un vrai 404
           code=$(curl -s -o /dev/null -w '%{http_code}' -H 'Accept: text/html' "$PRODUCTION_URL/pokemon/inconnu")
