@@ -20,16 +20,14 @@ const slug = computed(() => String(route.params.name))
 
 // Rendu côté serveur : une URL ouverte directement arrive déjà remplie.
 // Description et catégorie dans la langue choisie (rechargées si elle change).
-const profileUrl = computed(
-  () => `/api/pokemon/profile/${encodeURIComponent(slug.value)}`,
-)
+const pokemonData = usePokemonData()
 
 // Rendu côté serveur (ou page générée au build, en français) : la fiche
 // arrive déjà remplie.
-const { data: pokemon, error } = await useFetch<PokemonProfile>(profileUrl, {
-  key: `pokemon-profile-${slug.value}`,
-  query: { lang: locale.value },
-})
+const { data: pokemon, error } = await useAsyncData<PokemonProfile>(
+  `pokemon-profile-${slug.value}`,
+  () => pokemonData.profile(slug.value, locale.value),
+)
 
 if (error.value || !pokemon.value) {
   // 404 (inconnu) ou 502 (PokéAPI en panne) : page d'erreur, vrai statut HTTP.
@@ -52,9 +50,7 @@ const profile = computed(() => pokemon.value!)
 async function loadInVisitorLanguage() {
   if (!pokemon.value || pokemon.value.lang === locale.value) return
   try {
-    pokemon.value = await $fetch<PokemonProfile>(profileUrl.value, {
-      query: { lang: locale.value },
-    })
+    pokemon.value = await pokemonData.profile(slug.value, locale.value)
   } catch {
     // PokéAPI indisponible : on garde la version déjà affichée.
   }

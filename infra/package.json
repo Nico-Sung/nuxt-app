@@ -9,7 +9,9 @@
     "synth": "npm run build:lambda && cdk synth --quiet",
     "diff": "npm run build:lambda && cdk diff",
     "deploy": "npm run build:lambda && cdk deploy --require-approval never",
-    "destroy": "cdk destroy"
+    "destroy": "cdk destroy",
+    "deploy:api": "npm run deploy -- PokemonApi",
+    "deploy:static": "npm run deploy -- PokemonStatic"
   },
   "devDependencies": {
     "@types/node": "^26.6.6",

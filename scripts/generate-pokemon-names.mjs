@@ -1,7 +1,8 @@
 // @ts-check
 /**
  * Génère shared/data/pokemon-names.json : noms officiels des Pokémon (espèces)
- * et des talents, en anglais et en français, depuis PokéAPI.
+ * et des talents, en anglais et en français, depuis PokéAPI ; pour chaque
+ * espèce, aussi le nom d'URL de sa forme par défaut (« deoxys-normal »).
  *
  *   node scripts/generate-pokemon-names.mjs
  *
@@ -18,8 +19,8 @@ const CONCURRENCY = 8
 
 /**
  * @typedef {{ name: string, language: { name: string } }} PokeApiName
- * @typedef {{ id: number, name: string, names: PokeApiName[] }} PokeApiNamed
- * @typedef {Partial<Record<'en' | 'fr', string>>} Names
+ * @typedef {{ id: number, name: string, names: PokeApiName[], varieties?: { is_default: boolean, pokemon: { name: string } }[] }} PokeApiNamed
+ * @typedef {Partial<Record<'en' | 'fr' | 'slug', string>>} Names
  */
 
 /** @param {string} url @returns {Promise<any>} */
@@ -96,7 +97,9 @@ const abilities = await fetchAll('ability')
 /** @type {Record<string, Names>} */
 const speciesNames = {}
 for (const s of species.sort((a, b) => a.id - b.id)) {
-  speciesNames[String(s.id)] = pickNames(s)
+  // slug : nom PokéAPI de la forme par défaut, celui des URL (/pokemon/deoxys-normal)
+  const slug = s.varieties?.find((v) => v.is_default)?.pokemon.name ?? s.name
+  speciesNames[String(s.id)] = { ...pickNames(s), slug }
 }
 
 /** @type {Record<string, Names>} */

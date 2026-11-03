@@ -358,3 +358,80 @@ jobs:
           code=$(curl -s -o /dev/null -w '%{http_code}' -H 'Accept: text/html' "$PRODUCTION_URL/pokemon/inconnu")
           echo "/pokemon/inconnu -> $code"
           test "$code" = 404
+
+  # ---------- Site statique (nuxt generate) : S3 + CloudFront, après toute la CI ----------
+
+  deploy-static:
+    name: Deploy statique (S3 + CloudFront)
+    needs: [build, e2e, i18n, infra-synth]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    # Le rôle AWS n'accepte que cet environnement de ce dépôt (OIDC).
+    environment:
+      name: static
+      url: ${{ vars.STATIC_URL }}
+    permissions:
+      id-token: write
+      contents: read
+    concurrency:
+      group: deploy-static
+      cancel-in-progress: false
+    env:
+      STATIC_URL: ${{ vars.STATIC_URL }}
+      STATIC_BUCKET: ${{ vars.STATIC_BUCKET }}
+      STATIC_DISTRIBUTION_ID: ${{ vars.STATIC_DISTRIBUTION_ID }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+
+      # generate : accueil + 1 025 fiches + version.json, sans serveur
+      - name: Generate
+        run: npx nuxt generate
+        env:
+          NUXT_PUBLIC_STATIC_SITE: '1'
+          PRERENDER_POKEMON: '1'
+          NUXT_PUBLIC_API_BASE: ${{ vars.API_URL }}
+
+      - name: Pages générées (avant l'envoi)
+        working-directory: .output/public
+        run: |
+          count=$(find pokemon -name index.html | wc -l)
+          echo "$count fiches HTML générées"
+          test "$count" -ge 1025
+          test -f index.html && test -f 404.html
+          grep -q 'Statik' pokemon/pikachu/index.html
+          jq -e --arg c "${GITHUB_SHA::7}" '.commit == $c' version.json
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: eu-west-1
+
+      # sync S3 : _nuxt/ (noms uniques par build) gardés 1 an, jamais supprimés
+      # (un visiteur sur l'ancienne version peut encore en avoir besoin) ;
+      # le reste (HTML, JSON) revalidé à chaque visite, et supprimé s'il a disparu.
+      - name: Sync S3
+        run: |
+          aws s3 sync .output/public/_nuxt "s3://$STATIC_BUCKET/_nuxt" \
+            --cache-control "public,max-age=31536000,immutable" --only-show-errors
+          aws s3 sync .output/public "s3://$STATIC_BUCKET" --exclude "_nuxt/*" --delete \
+            --cache-control "public,max-age=0,must-revalidate" --only-show-errors
+          echo "$(aws s3 ls "s3://$STATIC_BUCKET" --recursive | wc -l) fichiers dans le bucket"
+
+      - name: Invalidation CloudFront
+        run: |
+          id=$(aws cloudfront create-invalidation --distribution-id "$STATIC_DISTRIBUTION_ID" \
+            --paths '/*' --query Invalidation.Id --output text)
+          echo "invalidation $id"
+          aws cloudfront wait invalidation-completed --distribution-id "$STATIC_DISTRIBUTION_ID" --id "$id"
+
+      - name: Le site statique en ligne sert ce commit
+        run: |
+          expected="${GITHUB_SHA::7}"
+          commit=$(curl -s "$STATIC_URL/version.json" | jq -r '.commit // empty' 2>/dev/null || true)
+          echo "en ligne = ${commit:-?}, attendu = $expected"
+          test "$commit" = "$expected"
+          curl -s "$STATIC_URL/pokemon/pikachu" | grep -q 'Statik'
+          code=$(curl -s -o /dev/null -w '%{http_code}' "$STATIC_URL/pokemon/inconnu")
+          echo "/pokemon/inconnu -> $code"
+          test "$code" = 404

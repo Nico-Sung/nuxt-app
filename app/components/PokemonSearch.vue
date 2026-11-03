@@ -6,6 +6,7 @@ import { pokemonName } from '#shared/utils/names'
 import { MIN_QUERY_LENGTH } from '#shared/utils/search'
 
 const { t, locale } = useI18n()
+const pokemonData = usePokemonData()
 
 /** Nom affiché dans la langue choisie (« Bulbizarre » / « Bulbasaur »). */
 const displayName = (pokemon: Pokemon) =>
@@ -56,9 +57,7 @@ async function runSearch(q: string) {
   const requestId = ++lastRequest
   status.value = 'loading'
   try {
-    const data = await $fetch<Pokemon[]>('/api/pokemon/search', {
-      query: { q },
-    })
+    const data = await pokemonData.search(q)
     if (requestId !== lastRequest) return // une recherche plus récente a été lancée
     results.value = data
     activeIndex.value = data.length ? 0 : -1

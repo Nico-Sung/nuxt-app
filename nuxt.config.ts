@@ -3,6 +3,12 @@ import { fetchPokemonRoutes } from './build/pokemonRoutes'
 
 const POKEAPI_BASE = 'https://pokeapi.co/api/v2'
 
+/**
+ * Site statique (S3 + CloudFront) : `NUXT_PUBLIC_STATIC_SITE=1 nuxt generate`.
+ * Sans serveur Nuxt, le navigateur appelle PokéAPI directement.
+ */
+const STATIC_SITE = process.env.NUXT_PUBLIC_STATIC_SITE === '1'
+
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   modules: ['@nuxt/eslint', '@nuxtjs/i18n'],
@@ -16,6 +22,10 @@ export default defineNuxtConfig({
     /** PokéAPI, appelée par le serveur Nuxt ; surchargeable avec NUXT_POKEAPI_BASE. */
     pokeapiBase: POKEAPI_BASE,
     public: {
+      /** Site statique : pas de routes /api, voir usePokemonData. */
+      staticSite: STATIC_SITE,
+      /** PokéAPI appelée par le navigateur (site statique uniquement). */
+      pokeapiBase: POKEAPI_BASE,
       /** URL de l'API Hono ; surchargeable avec NUXT_PUBLIC_API_BASE. */
       apiBase: 'http://localhost:3001',
     },
@@ -36,6 +46,16 @@ export default defineNuxtConfig({
      * PRERENDER_POKEMON_LIMIT=20 pour un essai local rapide.
      */
     async 'nitro:config'(nitroConfig) {
+      // Site statique : l'accueil (pas d'exploration des liens) et la version
+      // en ligne (/version.json, comme /api/health).
+      if (STATIC_SITE) {
+        nitroConfig.prerender ??= {}
+        nitroConfig.prerender.routes = [
+          ...(nitroConfig.prerender.routes ?? []),
+          '/',
+          '/version.json',
+        ]
+      }
       if (process.env.PRERENDER_POKEMON !== '1') return
       const limit = Number(process.env.PRERENDER_POKEMON_LIMIT) || undefined
       const routes = await fetchPokemonRoutes(POKEAPI_BASE, { limit })

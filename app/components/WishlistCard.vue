@@ -21,13 +21,15 @@ const name = computed(() =>
   pokemonName(pokemon.value.id, locale.value, pokemon.value.name),
 )
 
+const pokemonData = usePokemonData()
 const {
   data: details,
   status,
   refresh,
-} = useLazyFetch<PokemonDetails>(() => `/api/pokemon/${pokemon.value.id}`, {
-  key: `pokemon-details-${pokemon.value.id}`,
-})
+} = useLazyAsyncData<PokemonDetails>(
+  `pokemon-details-${pokemon.value.id}`,
+  () => pokemonData.details(pokemon.value.id),
+)
 
 const mainColor = computed(() => {
   const main = details.value?.types[0]
