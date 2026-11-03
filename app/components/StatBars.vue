@@ -1,24 +1,20 @@
 <script setup lang="ts">
 import type { StatName } from '#shared/types/pokemon'
 import { STAT_NAMES } from '#shared/types/pokemon'
-import {
-  STAT_LABELS,
-  statLevel,
-  statPercent,
-  totalStats,
-} from '#shared/utils/stats'
+import { statLevel, statPercent, totalStats } from '#shared/utils/stats'
 
 const props = defineProps<{
   stats: Readonly<Record<StatName, number>>
 }>()
 
+const { t } = useI18n()
 const total = computed(() => totalStats(props.stats))
 </script>
 
 <template>
   <dl class="stats">
     <div v-for="name in STAT_NAMES" :key="name" class="stat">
-      <dt>{{ STAT_LABELS[name] }}</dt>
+      <dt>{{ t(`stats.${name}`) }}</dt>
       <dd>
         <span class="value">{{ stats[name] }}</span>
         <span class="bar" aria-hidden="true">
@@ -31,7 +27,7 @@ const total = computed(() => totalStats(props.stats))
       </dd>
     </div>
     <div class="stat total">
-      <dt>Total</dt>
+      <dt>{{ t('stats.total') }}</dt>
       <dd>
         <span class="value">{{ total }}</span>
       </dd>

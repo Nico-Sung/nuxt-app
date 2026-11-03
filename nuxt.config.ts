@@ -1,6 +1,6 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
-  modules: ['@nuxt/eslint'],
+  modules: ['@nuxt/eslint', '@nuxtjs/i18n'],
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
   css: ['~/assets/css/main.css'],
@@ -12,10 +12,18 @@ export default defineNuxtConfig({
       apiBase: 'http://localhost:3001',
     },
   },
-  app: {
-    head: {
-      htmlAttrs: { lang: 'fr' },
-      title: 'Pokémon à capturer',
+  i18n: {
+    // Mêmes URL dans les deux langues ; la langue est mémorisée dans un cookie.
+    strategy: 'no_prefix',
+    defaultLocale: 'fr',
+    locales: [
+      { code: 'fr', language: 'fr-FR', name: 'Français', file: 'fr.json' },
+      { code: 'en', language: 'en-US', name: 'English', file: 'en.json' },
+    ],
+    detectBrowserLanguage: {
+      useCookie: true,
+      cookieKey: 'i18n_locale',
+      fallbackLocale: 'fr',
     },
   },
 })

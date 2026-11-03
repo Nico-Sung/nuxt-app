@@ -5,7 +5,9 @@ import type {
 } from '../shared/types/pokemon'
 import {
   cleanFlavorText,
+  isAppLanguage,
   isPokemonSlug,
+  profileLanguages,
   pickLocalized,
   pokemonSlug,
   toPokemonProfile,
@@ -152,6 +154,32 @@ describe('toPokemonProfile', () => {
   })
 })
 
+describe('toPokemonProfile : langue demandée', () => {
+  it('en : catégorie et description en anglais (la plus récente)', () => {
+    const profile = toPokemonProfile(PIKACHU, PIKACHU_SPECIES, 'en')
+    expect(profile.genus).toBe('Mouse Pokémon')
+    expect(profile.description).toBe('Latest english text.')
+  })
+
+  it('fr par défaut', () => {
+    expect(toPokemonProfile(PIKACHU, PIKACHU_SPECIES).genus).toBe(
+      'Pokémon Souris',
+    )
+  })
+
+  it('profileLanguages : langue demandée puis anglais', () => {
+    expect(profileLanguages('fr')).toEqual(['fr', 'en'])
+    expect(profileLanguages('en')).toEqual(['en'])
+  })
+
+  it('isAppLanguage', () => {
+    expect(isAppLanguage('fr')).toBe(true)
+    expect(isAppLanguage('en')).toBe(true)
+    expect(isAppLanguage('de')).toBe(false)
+    expect(isAppLanguage(undefined)).toBe(false)
+  })
+})
+
 describe('outils de la fiche', () => {
   it('pickLocalized : première langue disponible, entrée la plus récente', () => {
     const entries = [
@@ -159,7 +187,7 @@ describe('outils de la fiche', () => {
       { v: 2, ...lang('fr') },
       { v: 3, ...lang('fr') },
     ]
-    expect(pickLocalized(entries)?.v).toBe(3)
+    expect(pickLocalized(entries, ['fr', 'en'])?.v).toBe(3)
     expect(pickLocalized(entries, ['de', 'en'])?.v).toBe(1)
     expect(pickLocalized(entries, ['de'])).toBeUndefined()
   })
@@ -197,6 +225,8 @@ describe('outils de la fiche', () => {
     expect(formatHeight(17)).toBe('1,7 m')
     expect(formatWeight(60)).toBe('6 kg')
     expect(formatWeight(9055)).toBe('905,5 kg')
+    expect(formatHeight(4, 'en')).toBe('0.4\u00a0m')
+    expect(formatWeight(9055, 'en')).toBe('905.5\u00a0kg')
     expect(formatNumber(25)).toBe('#025')
     expect(formatNumber(1025)).toBe('#1025')
   })
@@ -231,6 +261,16 @@ describe('fetchPokemonProfile', () => {
         'Il lui arrive de remettre sur pied un Pikachu en déchargeant.',
     })
     expect(fetchMock).toHaveBeenCalledTimes(2)
+  })
+
+  it('lang=en : catégorie et description en anglais', async () => {
+    mockRoutes({
+      [POKEMON_URL]: () => json(PIKACHU),
+      [SPECIES_URL]: () => json(PIKACHU_SPECIES),
+    })
+    const profile = await fetchPokemonProfile('pikachu', BASE, 'en')
+    expect(profile.genus).toBe('Mouse Pokémon')
+    expect(profile.description).toBe('Latest english text.')
   })
 
   it('404 : lève PokemonNotFoundError, sans appeler l’espèce', async () => {

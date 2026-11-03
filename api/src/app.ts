@@ -1,5 +1,8 @@
-import { Hono } from 'hono'
+import { Hono, type Context } from 'hono'
 import { cors } from 'hono/cors'
+import { languageDetector, type LanguageVariables } from 'hono/language'
+import type { ContentfulStatusCode } from 'hono/utils/http-status'
+import { DEFAULT_LANGUAGE, LANGUAGES, translate } from './i18n.js'
 import { shortSha, VERSION } from './version.js'
 import { connect, PostgresWishlistStore } from './postgresStore.js'
 import {
@@ -46,10 +49,24 @@ function parseId(raw: string): number | null {
   return /^[1-9]\d*$/.test(raw) ? Number(raw) : null
 }
 
-const error = (code: ErrorCode, message: string): ErrorResponse => ({
-  error: message,
-  code,
-})
+type Env = { Variables: LanguageVariables }
+
+/**
+ * Réponse d'erreur : `code` stable (lu par le front), `error` traduit
+ * selon Accept-Language (anglais par défaut).
+ */
+function fail(
+  c: Context<Env>,
+  status: ContentfulStatusCode,
+  code: ErrorCode,
+  params?: Record<string, string | number>,
+) {
+  const body: ErrorResponse = {
+    error: translate(c.get('language'), `errors.${code}`, params),
+    code,
+  }
+  return c.json(body, status)
+}
 
 export function createApp({
   version,
@@ -57,16 +74,31 @@ export function createApp({
   store = new MemoryWishlistStore(),
   corsOrigin = DEFAULT_CORS_ORIGIN,
 }: AppOptions) {
-  const app = new Hono()
+  const app = new Hono<Env>()
 
   app.use(
     '*',
     cors({
       origin: corsOrigin,
       allowMethods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
-      allowHeaders: ['Content-Type'],
+      allowHeaders: ['Content-Type', 'Accept-Language'],
     }),
   )
+
+  // Langue des messages : en-tête Accept-Language ("fr-FR" -> fr), sinon anglais.
+  app.use(
+    '*',
+    languageDetector({
+      supportedLanguages: [...LANGUAGES],
+      fallbackLanguage: DEFAULT_LANGUAGE,
+      order: ['header'],
+      caches: false,
+    }),
+  )
+  app.use('*', async (c, next) => {
+    await next()
+    c.header('Content-Language', c.get('language') ?? DEFAULT_LANGUAGE)
+  })
 
   app.get('/health', (c) =>
     c.json<HealthResponse>({ status: 'ok', version, commit }),
@@ -79,23 +111,20 @@ export function createApp({
     try {
       body = await c.req.json()
     } catch {
-      return c.json(error('invalid_body', 'Corps invalide'), 400)
+      return fail(c, 400, 'invalid_body')
     }
 
     const pokemon = parsePokemonInput(body)
     if (!pokemon) {
-      return c.json(error('invalid_body', 'Corps invalide'), 400)
+      return fail(c, 400, 'invalid_body')
     }
 
     const result = await store.add(pokemon)
     switch (result.status) {
       case 'duplicate':
-        return c.json(error('duplicate', 'Pokémon déjà dans la liste'), 409)
+        return fail(c, 409, 'duplicate')
       case 'full':
-        return c.json(
-          error('full', `Liste pleine (${MAX_WISHLIST_SIZE} max)`),
-          409,
-        )
+        return fail(c, 409, 'full', { max: MAX_WISHLIST_SIZE })
       case 'added':
         c.header('Location', `/wishlist/${pokemon.id}`)
         return c.json(result.item, 201)
@@ -105,22 +134,22 @@ export function createApp({
   app.delete('/wishlist/:id', async (c) => {
     const id = parseId(c.req.param('id'))
     if (id === null) {
-      return c.json(error('invalid_id', 'Id invalide'), 400)
+      return fail(c, 400, 'invalid_id')
     }
 
     const removed = await store.remove(id)
     if (!removed) {
-      return c.json(error('not_found', 'Pokémon absent de la liste'), 404)
+      return fail(c, 404, 'not_found')
     }
     return c.json(removed, 200)
   })
 
-  app.notFound((c) => c.json(error('route_not_found', 'Not Found'), 404))
+  app.notFound((c) => fail(c, 404, 'route_not_found'))
 
   // Base injoignable, erreur SQL inattendue… : 500 en JSON, détail dans les logs.
   app.onError((err, c) => {
     console.error(err)
-    return c.json(error('internal_error', 'Erreur interne'), 500)
+    return fail(c, 500, 'internal_error')
   })
 
   return app

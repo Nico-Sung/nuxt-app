@@ -62,6 +62,34 @@ describe('fetchWishlist (GET /wishlist)', () => {
   })
 })
 
+describe('langue (Accept-Language)', () => {
+  it('envoie la langue de l’interface à chaque appel', async () => {
+    const fetchMock = mockFetch(() => json([]))
+    await fetchWishlist(BASE, 'en')
+    expect(fetchMock).toHaveBeenCalledWith('http://localhost:3001/wishlist', {
+      headers: { 'Accept-Language': 'en' },
+    })
+
+    mockFetch(() => json(pikachuItem, 201))
+    await postWishlist(BASE, pikachu, 'fr')
+    const [, init] = vi.mocked(fetch).mock.calls[0] as unknown as [
+      string,
+      RequestInit,
+    ]
+    expect(init.headers).toEqual({
+      'Content-Type': 'application/json',
+      'Accept-Language': 'fr',
+    })
+
+    const deleteMock = mockFetch(() => json(pikachuItem))
+    await deleteWishlist(BASE, 25, 'en')
+    expect(deleteMock).toHaveBeenCalledWith(
+      'http://localhost:3001/wishlist/25',
+      { method: 'DELETE', headers: { 'Accept-Language': 'en' } },
+    )
+  })
+})
+
 describe('postWishlist (POST /wishlist)', () => {
   it('201 : envoie le Pokémon en JSON et renvoie l’entrée créée', async () => {
     const fetchMock = mockFetch(() => json(pikachuItem, 201))

@@ -2,7 +2,7 @@
 import type { PokemonProfile } from '#shared/types/pokemon'
 import { formatHeight, formatNumber, formatWeight } from '#shared/utils/format'
 import { smallSpriteUrl } from '#shared/utils/pokeapi'
-import { typeInfo } from '#shared/utils/types'
+import { typeColor } from '#shared/utils/types'
 
 definePageMeta({
   // Une seule URL par Pokémon : /pokemon/Pikachu -> /pokemon/pikachu (301).
@@ -14,13 +14,15 @@ definePageMeta({
   },
 })
 
+const { t, locale } = useI18n()
 const route = useRoute()
 const slug = computed(() => String(route.params.name))
 
 // Rendu côté serveur : une URL ouverte directement arrive déjà remplie.
+// Description et catégorie dans la langue choisie (rechargées si elle change).
 const { data: pokemon, error } = await useFetch<PokemonProfile>(
   () => `/api/pokemon/profile/${encodeURIComponent(slug.value)}`,
-  { key: `pokemon-profile-${slug.value}` },
+  { key: `pokemon-profile-${slug.value}`, query: { lang: locale } },
 )
 
 if (error.value || !pokemon.value) {
@@ -35,11 +37,12 @@ if (error.value || !pokemon.value) {
 }
 
 const profile = computed(() => pokemon.value!)
-const mainColor = computed(
-  () => typeInfo(profile.value.types[0] ?? 'normal').color,
-)
+const mainColor = computed(() => typeColor(profile.value.types[0] ?? 'normal'))
 
-useHead({ title: () => `${profile.value.name} · Pokémon à capturer` })
+useHead({
+  title: () =>
+    t('app.pageTitle', { title: profile.value.name, app: t('app.title') }),
+})
 
 const imageState = ref<'artwork' | 'small' | 'missing'>('artwork')
 const imageSrc = computed(() =>
@@ -54,12 +57,10 @@ function onImageError() {
 
 <template>
   <div>
-    <header class="header">
-      <NuxtLink to="/" class="brand">Pokémon à capturer</NuxtLink>
-    </header>
+    <AppHeader />
 
     <main class="main">
-      <NuxtLink to="/" class="back">← Ma liste</NuxtLink>
+      <NuxtLink to="/" class="back">{{ t('profile.back') }}</NuxtLink>
 
       <article class="profile" :style="{ '--type-color': mainColor }">
         <div class="art">
@@ -85,20 +86,22 @@ function onImageError() {
 
           <dl class="facts">
             <div>
-              <dt>Taille</dt>
-              <dd>{{ formatHeight(profile.height) }}</dd>
+              <dt>{{ t('profile.height') }}</dt>
+              <dd>{{ formatHeight(profile.height, locale) }}</dd>
             </div>
             <div>
-              <dt>Poids</dt>
-              <dd>{{ formatWeight(profile.weight) }}</dd>
+              <dt>{{ t('profile.weight') }}</dt>
+              <dd>{{ formatWeight(profile.weight, locale) }}</dd>
             </div>
             <div v-if="profile.abilities.length">
-              <dt>Talents</dt>
+              <dt>{{ t('profile.abilities') }}</dt>
               <dd>
                 <ul class="abilities">
                   <li v-for="ability in profile.abilities" :key="ability.name">
-                    {{ ability.name
-                    }}<span v-if="ability.hidden" class="hidden"> (caché)</span>
+                    {{ ability.name }}
+                    <span v-if="ability.hidden" class="hidden">{{
+                      t('profile.hidden')
+                    }}</span>
                   </li>
                 </ul>
               </dd>
@@ -106,7 +109,7 @@ function onImageError() {
           </dl>
 
           <section class="stats" aria-labelledby="stats-title">
-            <h2 id="stats-title">Statistiques de base</h2>
+            <h2 id="stats-title">{{ t('profile.baseStats') }}</h2>
             <StatBars :stats="profile.stats" />
           </section>
         </div>
@@ -116,19 +119,6 @@ function onImageError() {
 </template>
 
 <style scoped>
-.header {
-  padding: 16px clamp(16px, 4vw, 32px);
-  background: var(--red);
-  border-bottom: 4px solid var(--ink);
-}
-
-.brand {
-  color: #fff;
-  font-size: 1.5rem;
-  font-weight: 700;
-  text-decoration: none;
-}
-
 .main {
   max-width: 900px;
   margin: 0 auto;

@@ -1,18 +1,24 @@
 <script setup lang="ts">
 import type { PokemonTypeName } from '#shared/types/pokemon'
-import { typeInfo } from '#shared/utils/types'
+import { typeColor } from '#shared/utils/types'
 
 const props = defineProps<{
   types: readonly PokemonTypeName[]
 }>()
 
+const { t } = useI18n()
+
 const badges = computed(() =>
-  props.types.map((name) => ({ name, ...typeInfo(name) })),
+  props.types.map((name) => ({
+    name,
+    label: t(`types.${name}`),
+    color: typeColor(name),
+  })),
 )
 </script>
 
 <template>
-  <ul class="types" aria-label="Types">
+  <ul class="types" :aria-label="t('types.label')">
     <li
       v-for="type in badges"
       :key="type.name"

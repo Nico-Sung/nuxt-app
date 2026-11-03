@@ -1,0 +1,107 @@
+{
+  "app": {
+    "title": "Pokémon to catch",
+    "pageTitle": "{title} · {app}"
+  },
+  "language": {
+    "label": "Language",
+    "fr": "Français",
+    "en": "English"
+  },
+  "home": {
+    "counterLabel": "{count} of {max} in the list",
+    "listTitle": "My list",
+    "loading": "Loading your list…",
+    "apiDown": "API unavailable: unable to load your list.",
+    "retry": "Retry",
+    "empty": "Your list is empty. Search for a Pokémon to add it.",
+    "clear": "Clear all",
+    "clearConfirm": "Clear the whole list?",
+    "full": "List full ({max} Pokémon max): remove a Pokémon to add another one.",
+    "added": "{name} added to the list",
+    "addedFull": "{name} added. {full}",
+    "removed": "{name} removed from the list",
+    "cleared": "List cleared",
+    "duplicate": "{name} is already in the list.",
+    "apiNotResponding": "the API is not responding. Try again in a moment.",
+    "addFailed": "Unable to add {name}: {reason}",
+    "removeFailed": "Unable to remove {name}: {reason}",
+    "thisPokemon": "this Pokémon",
+    "clearFailed": "Unable to clear the list: {reason}"
+  },
+  "search": {
+    "label": "Search for a Pokémon",
+    "placeholder": "Search for a Pokémon (name, no. or #025)",
+    "tooShort": "Type at least {min} characters.",
+    "loading": "Searching…",
+    "error": "PokéAPI is not responding.",
+    "retry": "Retry",
+    "noResults": "No results.",
+    "action": {
+      "adding": "Adding…",
+      "inList": "In the list",
+      "full": "List full",
+      "add": "Add"
+    }
+  },
+  "card": {
+    "remove": "Remove",
+    "removeLabel": "Remove {name}",
+    "statsLoading": "Loading stats",
+    "statsUnavailable": "Stats unavailable.",
+    "retry": "Retry"
+  },
+  "types": {
+    "label": "Types",
+    "normal": "Normal",
+    "fire": "Fire",
+    "water": "Water",
+    "electric": "Electric",
+    "grass": "Grass",
+    "ice": "Ice",
+    "fighting": "Fighting",
+    "poison": "Poison",
+    "ground": "Ground",
+    "flying": "Flying",
+    "psychic": "Psychic",
+    "bug": "Bug",
+    "rock": "Rock",
+    "ghost": "Ghost",
+    "dragon": "Dragon",
+    "dark": "Dark",
+    "steel": "Steel",
+    "fairy": "Fairy"
+  },
+  "stats": {
+    "hp": "HP",
+    "attack": "Attack",
+    "defense": "Defense",
+    "special-attack": "Sp. Atk",
+    "special-defense": "Sp. Def",
+    "speed": "Speed",
+    "total": "Total"
+  },
+  "profile": {
+    "back": "← My list",
+    "height": "Height",
+    "weight": "Weight",
+    "abilities": "Abilities",
+    "hidden": "(hidden)",
+    "baseStats": "Base stats"
+  },
+  "error": {
+    "code": "Error {code}",
+    "title": {
+      "pokemonNotFound": "Pokémon not found",
+      "pageNotFound": "Page not found",
+      "pokeapiDown": "PokéAPI unavailable",
+      "unexpected": "Unexpected error"
+    },
+    "pokemonNotFound": "No Pokémon is called “{name}”. Check the spelling of the name in the address.",
+    "pageNotFound": "This page does not exist.",
+    "pokeapiDown": "PokéAPI is not responding right now. Try again in a moment.",
+    "unexpected": "Something went wrong.",
+    "retry": "Retry",
+    "home": "Back to my list"
+  }
+}

@@ -1,7 +1,10 @@
 <script setup lang="ts">
 import type { Pokemon } from '#shared/types/pokemon'
 import { smallSpriteUrl } from '#shared/utils/pokeapi'
+import { formatNumber } from '#shared/utils/format'
 import { MIN_QUERY_LENGTH } from '#shared/utils/search'
+
+const { t } = useI18n()
 
 const props = defineProps<{
   isInList: (id: number) => boolean
@@ -16,10 +19,10 @@ function canAdd(id: number): boolean {
 }
 
 function actionLabel(id: number): string {
-  if (props.pendingId === id) return 'Ajout…'
-  if (props.isInList(id)) return 'Dans la liste'
-  if (props.isFull) return 'Liste pleine'
-  return 'Ajouter'
+  if (props.pendingId === id) return t('search.action.adding')
+  if (props.isInList(id)) return t('search.action.inList')
+  if (props.isFull) return t('search.action.full')
+  return t('search.action.add')
 }
 
 const emit = defineEmits<{
@@ -123,7 +126,7 @@ function onKeydown(event: KeyboardEvent) {
 
 <template>
   <div class="search">
-    <label for="pokemon-search" class="sr-only">Rechercher un Pokémon</label>
+    <label for="pokemon-search" class="sr-only">{{ t('search.label') }}</label>
     <input
       id="pokemon-search"
       v-model="query"
@@ -131,7 +134,7 @@ function onKeydown(event: KeyboardEvent) {
       role="combobox"
       autocomplete="off"
       spellcheck="false"
-      placeholder="Rechercher un Pokémon (nom, n° ou #025)"
+      :placeholder="t('search.placeholder')"
       aria-autocomplete="list"
       aria-controls="search-results"
       :aria-expanded="results.length > 0"
@@ -140,21 +143,23 @@ function onKeydown(event: KeyboardEvent) {
     />
 
     <p v-if="status === 'short'" class="hint">
-      Tape au moins {{ MIN_QUERY_LENGTH }} caractères.
+      {{ t('search.tooShort', { min: MIN_QUERY_LENGTH }) }}
     </p>
     <p v-else-if="status === 'loading'" class="hint" aria-live="polite">
-      Recherche…
+      {{ t('search.loading') }}
     </p>
     <p v-else-if="status === 'error'" class="hint error" role="alert">
-      PokéAPI ne répond pas.
-      <button type="button" class="link" @click="retry">Réessayer</button>
+      {{ t('search.error') }}
+      <button type="button" class="link" @click="retry">
+        {{ t('search.retry') }}
+      </button>
     </p>
     <p
       v-else-if="status === 'done' && !results.length"
       class="hint"
       aria-live="polite"
     >
-      Aucun résultat.
+      {{ t('search.noResults') }}
     </p>
 
     <ul
@@ -182,7 +187,7 @@ function onKeydown(event: KeyboardEvent) {
           height="40"
           loading="lazy"
         />
-        <span class="num">#{{ String(pokemon.id).padStart(3, '0') }}</span>
+        <span class="num">{{ formatNumber(pokemon.id) }}</span>
         <span class="name">{{ pokemon.name }}</span>
         <span class="action" :class="{ taken: !canAdd(pokemon.id) }">
           {{ actionLabel(pokemon.id) }}

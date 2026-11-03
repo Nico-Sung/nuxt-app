@@ -70,7 +70,7 @@ describe('POST /wishlist', () => {
 
     expect(res.status).toBe(409)
     expect(await res.json()).toEqual<ErrorResponse>({
-      error: 'Pokémon déjà dans la liste',
+      error: 'Pokémon already in the list',
       code: 'duplicate',
     })
     expect(await (await getList()).json()).toHaveLength(1)
@@ -85,7 +85,7 @@ describe('POST /wishlist', () => {
     const res = await post(pikachu)
     expect(res.status).toBe(409)
     expect(await res.json()).toEqual<ErrorResponse>({
-      error: 'Liste pleine (6 max)',
+      error: 'List full (6 max)',
       code: 'full',
     })
     expect(await (await getList()).json()).toHaveLength(6)
@@ -104,7 +104,7 @@ describe('POST /wishlist', () => {
 
     expect(res.status).toBe(400)
     expect(await res.json()).toEqual<ErrorResponse>({
-      error: 'Corps invalide',
+      error: 'Invalid body',
       code: 'invalid_body',
     })
     expect(await (await getList()).json()).toEqual([])
@@ -129,7 +129,7 @@ describe('DELETE /wishlist/:id', () => {
 
     expect(res.status).toBe(404)
     expect(await res.json()).toEqual<ErrorResponse>({
-      error: 'Pokémon absent de la liste',
+      error: 'Pokémon not in the list',
       code: 'not_found',
     })
   })
@@ -144,7 +144,7 @@ describe('DELETE /wishlist/:id', () => {
     const res = await del(id)
     expect(res.status).toBe(400)
     expect(await res.json()).toEqual<ErrorResponse>({
-      error: 'Id invalide',
+      error: 'Invalid id',
       code: 'invalid_id',
     })
   })

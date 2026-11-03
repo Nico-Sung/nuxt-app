@@ -8,6 +8,7 @@ import type {
   PokemonProfile,
 } from '#shared/types/pokemon'
 import {
+  type AppLanguage,
   idFromUrl,
   toPokemon,
   toPokemonDetails,
@@ -90,6 +91,7 @@ export async function fetchPokemonIndex(
 export async function fetchPokemonProfile(
   slug: string,
   base = POKEAPI_BASE,
+  lang: AppLanguage = 'fr',
 ): Promise<PokemonProfile> {
   const data = await getJson<PokeApiPokemonProfileResponse>(
     `${base}/pokemon/${encodeURIComponent(slug)}`,
@@ -105,7 +107,7 @@ export async function fetchPokemonProfile(
     species = null
   }
 
-  return toPokemonProfile(data, species)
+  return toPokemonProfile(data, species, lang)
 }
 
 /** Traduit une erreur PokéAPI en réponse HTTP de notre API. */

@@ -1,8 +1,8 @@
 import type { PokemonProfile } from '#shared/types/pokemon'
-import { isPokemonSlug } from '#shared/utils/pokeapi'
+import { isAppLanguage, isPokemonSlug } from '#shared/utils/pokeapi'
 import { toHttpError } from '../../../lib/pokeapi'
 
-/** Fiche d'un Pokémon par son nom (« pikachu »). */
+/** Fiche d'un Pokémon par son nom (« pikachu ») ; ?lang=fr|en (défaut : fr). */
 export default defineEventHandler(async (event): Promise<PokemonProfile> => {
   const name = getRouterParam(event, 'name') ?? ''
   // Validé avant le cache : un nom impossible (espaces, majuscules…) n'existe
@@ -12,7 +12,8 @@ export default defineEventHandler(async (event): Promise<PokemonProfile> => {
   }
 
   try {
-    return await getPokemonProfile(name)
+    const { lang } = getQuery(event)
+    return await getPokemonProfile(name, isAppLanguage(lang) ? lang : 'fr')
   } catch (cause) {
     throw createError({ ...toHttpError(cause), cause })
   }

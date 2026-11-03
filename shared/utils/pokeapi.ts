@@ -80,8 +80,18 @@ export function pokemonSlug(name: string): string {
   return name.trim().toLowerCase().replace(/\s+/g, '-')
 }
 
-/** Langues des textes de la fiche, par ordre de préférence. */
-export const PROFILE_LANGUAGES = ['fr', 'en'] as const
+/** Langues de l'app ; l'anglais sert de repli pour les textes PokéAPI. */
+export const APP_LANGUAGES = ['fr', 'en'] as const
+export type AppLanguage = (typeof APP_LANGUAGES)[number]
+
+export function isAppLanguage(value: unknown): value is AppLanguage {
+  return (APP_LANGUAGES as readonly unknown[]).includes(value)
+}
+
+/** Langues des textes de la fiche, par ordre de préférence : demandée, puis anglais. */
+export function profileLanguages(lang: AppLanguage): string[] {
+  return lang === 'en' ? ['en'] : [lang, 'en']
+}
 
 /**
  * Entrée dans la première langue disponible ; pour une langue donnée,
@@ -89,7 +99,7 @@ export const PROFILE_LANGUAGES = ['fr', 'en'] as const
  */
 export function pickLocalized<T extends PokeApiLocalized>(
   entries: readonly T[],
-  languages: readonly string[] = PROFILE_LANGUAGES,
+  languages: readonly string[],
 ): T | undefined {
   for (const language of languages) {
     const matches = entries.filter((e) => e.language.name === language)
@@ -111,14 +121,18 @@ export function cleanFlavorText(text: string): string {
 
 /**
  * Transforme GET /pokemon/{name} (+ GET /pokemon-species/{id}) en fiche.
- * Sans espèce (indisponible), la fiche n'a ni catégorie ni description.
+ * Catégorie et description dans la langue demandée, sinon en anglais ;
+ * sans espèce (indisponible), la fiche n'a ni l'une ni l'autre.
  */
 export function toPokemonProfile(
   data: PokeApiPokemonProfileResponse,
   species: PokeApiSpeciesResponse | null,
+  lang: AppLanguage = 'fr',
 ): PokemonProfile {
-  const flavor = species && pickLocalized(species.flavor_text_entries)
-  const genus = species && pickLocalized(species.genera)
+  const languages = profileLanguages(lang)
+  const flavor =
+    species && pickLocalized(species.flavor_text_entries, languages)
+  const genus = species && pickLocalized(species.genera, languages)
 
   return {
     ...toPokemonDetails(data),

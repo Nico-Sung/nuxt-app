@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import type { Pokemon } from '#shared/types/pokemon'
 
+const { t } = useI18n()
 const { items, status, loaded, isFull, has, reload, add, remove, clear } =
   useWishlist()
 
@@ -12,8 +13,8 @@ const errorMessage = ref('')
 /** Pokémon en cours d'ajout (évite les doubles clics). */
 const pendingId = ref<number | null>(null)
 
-const FULL_MESSAGE = `Liste pleine (${MAX_WISHLIST_SIZE} Pokémon max) : retire un Pokémon pour en ajouter un autre.`
-const API_DOWN = "l'API ne répond pas. Réessaie dans un instant."
+const fullMessage = computed(() => t('home.full', { max: MAX_WISHLIST_SIZE }))
+const apiDown = () => t('home.apiNotResponding')
 
 async function onAdd(pokemon: Pokemon) {
   if (pendingId.value !== null) return
@@ -23,20 +24,23 @@ async function onAdd(pokemon: Pokemon) {
     const result = await add(pokemon)
     if (result === 'added') {
       announcement.value = isFull.value
-        ? `${pokemon.name} ajouté. ${FULL_MESSAGE}`
-        : `${pokemon.name} ajouté à la liste`
+        ? t('home.addedFull', { name: pokemon.name, full: fullMessage.value })
+        : t('home.added', { name: pokemon.name })
     } else {
       // La liste a changé côté API (autre onglet, curl…) : on resynchronise.
       await reload()
       if (result === 'full') {
         // le message « Liste pleine » permanent s'affiche déjà (isFull)
-        announcement.value = FULL_MESSAGE
+        announcement.value = fullMessage.value
       } else {
-        errorMessage.value = `${pokemon.name} est déjà dans la liste.`
+        errorMessage.value = t('home.duplicate', { name: pokemon.name })
       }
     }
   } catch {
-    errorMessage.value = `Impossible d'ajouter ${pokemon.name} : ${API_DOWN}`
+    errorMessage.value = t('home.addFailed', {
+      name: pokemon.name,
+      reason: apiDown(),
+    })
   } finally {
     pendingId.value = null
   }
@@ -47,35 +51,44 @@ async function onRemove(pokemonId: number) {
   errorMessage.value = ''
   try {
     await remove(pokemonId)
-    if (item) announcement.value = `${item.pokemon.name} retiré de la liste`
+    if (item) {
+      announcement.value = t('home.removed', { name: item.pokemon.name })
+    }
   } catch {
-    errorMessage.value = `Impossible de retirer ${item?.pokemon.name ?? 'ce Pokémon'} : ${API_DOWN}`
+    errorMessage.value = t('home.removeFailed', {
+      name: item?.pokemon.name ?? t('home.thisPokemon'),
+      reason: apiDown(),
+    })
   }
 }
 
 async function onClear() {
-  if (!window.confirm('Vider toute la liste ?')) return
+  if (!window.confirm(t('home.clearConfirm'))) return
   errorMessage.value = ''
   try {
     await clear()
-    announcement.value = 'Liste vidée'
+    announcement.value = t('home.cleared')
   } catch {
-    errorMessage.value = `Impossible de vider la liste : ${API_DOWN}`
+    errorMessage.value = t('home.clearFailed', { reason: apiDown() })
   }
 }
 </script>
 
 <template>
   <div>
-    <header class="header">
-      <h1>Pokémon à capturer</h1>
+    <AppHeader home>
       <span
         v-if="loaded"
         class="total"
-        :aria-label="`${items.length} sur ${MAX_WISHLIST_SIZE} dans la liste`"
+        :aria-label="
+          t('home.counterLabel', {
+            count: items.length,
+            max: MAX_WISHLIST_SIZE,
+          })
+        "
         >{{ items.length }} / {{ MAX_WISHLIST_SIZE }}</span
       >
-    </header>
+    </AppHeader>
 
     <main class="main">
       <p class="sr-only" aria-live="polite">
@@ -89,11 +102,12 @@ async function onClear() {
         @add="onAdd"
       />
       <p v-if="errorMessage" class="notice" role="alert">{{ errorMessage }}</p>
-      <p v-if="loaded && isFull" class="notice">{{ FULL_MESSAGE }}</p>
+      <p v-if="loaded && isFull" class="notice">{{ fullMessage }}</p>
 
       <section class="list" aria-labelledby="list-title">
         <h2 id="list-title">
-          Ma liste<span v-if="loaded">
+          {{ t('home.listTitle')
+          }}<span v-if="loaded">
             ({{ items.length }}/{{ MAX_WISHLIST_SIZE }})</span
           >
         </h2>
@@ -108,7 +122,7 @@ async function onClear() {
             />
           </div>
           <p v-else class="empty">
-            Ta liste est vide. Recherche un Pokémon pour l'ajouter.
+            {{ t('home.empty') }}
           </p>
 
           <button
@@ -117,41 +131,24 @@ async function onClear() {
             class="clear"
             @click="onClear"
           >
-            Tout vider
+            {{ t('home.clear') }}
           </button>
         </template>
 
         <p v-else-if="status === 'error'" class="api-error" role="alert">
-          API indisponible : impossible de charger ta liste.
+          {{ t('home.apiDown') }}
           <button type="button" class="link" @click="reload()">
-            Réessayer
+            {{ t('home.retry') }}
           </button>
         </p>
 
-        <p v-else class="loading">Chargement de ta liste…</p>
+        <p v-else class="loading">{{ t('home.loading') }}</p>
       </section>
     </main>
   </div>
 </template>
 
 <style scoped>
-.header {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 16px clamp(16px, 4vw, 32px);
-  background: var(--red);
-  border-bottom: 4px solid var(--ink);
-  color: #fff;
-}
-
-h1 {
-  margin: 0;
-  font-size: 1.5rem;
-  font-weight: 700;
-}
-
 .total {
   min-width: 2em;
   padding: 2px 10px;

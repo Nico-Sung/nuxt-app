@@ -138,7 +138,7 @@ describe('CRUD sur Postgres', () => {
     const res = await del(25)
     expect(res.status).toBe(404)
     expect(await res.json()).toEqual<ErrorResponse>({
-      error: 'Pokémon absent de la liste',
+      error: 'Pokémon not in the list',
       code: 'not_found',
     })
     expect(await dbRows()).toEqual([])
@@ -167,7 +167,7 @@ describe('doublons (clé primaire)', () => {
     const res = await post({ ...pikachu, name: 'Pikachu bis' })
     expect(res.status).toBe(409)
     expect(await res.json()).toEqual<ErrorResponse>({
-      error: 'Pokémon déjà dans la liste',
+      error: 'Pokémon already in the list',
       code: 'duplicate',
     })
     // la ligne d'origine n'est pas modifiée
@@ -202,7 +202,7 @@ describe('limite de 6 (trigger Postgres)', () => {
     const res = await post(snorlax)
     expect(res.status).toBe(409)
     expect(await res.json()).toEqual<ErrorResponse>({
-      error: 'Liste pleine (6 max)',
+      error: 'List full (6 max)',
       code: 'full',
     })
 

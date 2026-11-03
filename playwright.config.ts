@@ -18,6 +18,8 @@ export default defineConfig({
   reporter: process.env.CI ? [['list'], ['html', { open: 'never' }]] : 'list',
   use: {
     baseURL: NUXT_URL,
+    // Les parcours existants sont écrits en français (e2e/i18n.spec.ts teste l'anglais).
+    locale: 'fr-FR',
     trace: 'retain-on-failure',
   },
   projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],

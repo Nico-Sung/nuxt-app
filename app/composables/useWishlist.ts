@@ -10,6 +10,9 @@ export type WishlistStatus = 'loading' | 'ready' | 'error'
  */
 export function useWishlist() {
   const apiBase = useRuntimeConfig().public.apiBase
+  const i18n = useNuxtApp().$i18n
+  /** Langue de l'interface, envoyée à l'API (Accept-Language). */
+  const lang = () => i18n.locale.value
   const items = useState<WishlistItem[]>('wishlist', () => [])
   const status = useState<WishlistStatus>('wishlist-status', () => 'loading')
 
@@ -17,7 +20,7 @@ export function useWishlist() {
   async function reload() {
     if (status.value !== 'ready') status.value = 'loading'
     try {
-      items.value = await fetchWishlist(apiBase)
+      items.value = await fetchWishlist(apiBase, lang())
       status.value = 'ready'
     } catch {
       status.value = 'error'
@@ -31,7 +34,7 @@ export function useWishlist() {
   }
 
   async function add(pokemon: Pokemon): Promise<AddStatus> {
-    const result = await postWishlist(apiBase, pokemon)
+    const result = await postWishlist(apiBase, pokemon, lang())
     if (result.status === 'added') {
       items.value = [...items.value, result.item]
     }
@@ -39,7 +42,7 @@ export function useWishlist() {
   }
 
   async function remove(pokemonId: number) {
-    await deleteWishlist(apiBase, pokemonId)
+    await deleteWishlist(apiBase, pokemonId, lang())
     items.value = removeFromWishlist(items.value, pokemonId)
   }
 

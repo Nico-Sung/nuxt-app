@@ -19,13 +19,29 @@ function url(base: string, path: string): string {
   return `${base.replace(/\/+$/, '')}${path}`
 }
 
+/** Ajoute la langue de l'interface (messages d'erreur de l'API dans cette langue). */
+function withLanguage(
+  init: RequestInit | undefined,
+  lang: string | undefined,
+): RequestInit | undefined {
+  if (!lang) return init
+  return {
+    ...init,
+    headers: {
+      ...(init?.headers as Record<string, string> | undefined),
+      'Accept-Language': lang,
+    },
+  }
+}
+
 async function request(
   base: string,
   path: string,
   init?: RequestInit,
+  lang?: string,
 ): Promise<Response> {
   try {
-    return await fetch(url(base, path), init)
+    return await fetch(url(base, path), withLanguage(init, lang))
   } catch (cause) {
     throw new WishlistApiError(`API injoignable (${url(base, path)})`, {
       cause,
@@ -42,8 +58,11 @@ async function readJson<T>(res: Response): Promise<T> {
 }
 
 /** GET /wishlist */
-export async function fetchWishlist(base: string): Promise<WishlistItem[]> {
-  const res = await request(base, '/wishlist')
+export async function fetchWishlist(
+  base: string,
+  lang?: string,
+): Promise<WishlistItem[]> {
+  const res = await request(base, '/wishlist', undefined, lang)
   if (!res.ok) {
     throw new WishlistApiError(`GET /wishlist : HTTP ${res.status}`)
   }
@@ -58,13 +77,19 @@ export async function fetchWishlist(base: string): Promise<WishlistItem[]> {
 export async function postWishlist(
   base: string,
   pokemon: Pokemon,
+  lang?: string,
 ): Promise<AddResult> {
   const { id, name, sprite } = pokemon
-  const res = await request(base, '/wishlist', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ id, name, sprite }),
-  })
+  const res = await request(
+    base,
+    '/wishlist',
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id, name, sprite }),
+    },
+    lang,
+  )
 
   if (res.status === 201) {
     return { status: 'added', item: await readJson<WishlistItem>(res) }
@@ -80,10 +105,14 @@ export async function postWishlist(
 export async function deleteWishlist(
   base: string,
   pokemonId: number,
+  lang?: string,
 ): Promise<void> {
-  const res = await request(base, `/wishlist/${pokemonId}`, {
-    method: 'DELETE',
-  })
+  const res = await request(
+    base,
+    `/wishlist/${pokemonId}`,
+    { method: 'DELETE' },
+    lang,
+  )
   if (res.ok || res.status === 404) return
   throw new WishlistApiError(
     `DELETE /wishlist/${pokemonId} : HTTP ${res.status}`,

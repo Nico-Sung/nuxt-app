@@ -3,15 +3,6 @@ import type { StatName } from '../types/pokemon'
 /** Plus haute stat de base possible (PV de Leuphorie). */
 export const MAX_BASE_STAT = 255
 
-export const STAT_LABELS: Readonly<Record<StatName, string>> = {
-  hp: 'PV',
-  attack: 'Attaque',
-  defense: 'Défense',
-  'special-attack': 'Att. Spé.',
-  'special-defense': 'Déf. Spé.',
-  speed: 'Vitesse',
-}
-
 /** Largeur de la barre en %, entre 0 et 100. */
 export function statPercent(value: number): number {
   if (!Number.isFinite(value) || value <= 0) return 0

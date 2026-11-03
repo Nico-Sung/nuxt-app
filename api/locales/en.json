@@ -1,0 +1,11 @@
+{
+  "errors": {
+    "invalid_body": "Invalid body",
+    "duplicate": "Pokémon already in the list",
+    "full": "List full ({max} max)",
+    "invalid_id": "Invalid id",
+    "not_found": "Pokémon not in the list",
+    "route_not_found": "Route not found",
+    "internal_error": "Internal error"
+  }
+}

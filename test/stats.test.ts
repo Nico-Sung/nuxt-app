@@ -3,12 +3,14 @@ import type { PokeApiPokemonResponse } from '../shared/types/pokemon'
 import { toPokemonDetails } from '../shared/utils/pokeapi'
 import {
   MAX_BASE_STAT,
-  STAT_LABELS,
   statLevel,
   statPercent,
   totalStats,
 } from '../shared/utils/stats'
-import { TYPE_INFO, typeInfo } from '../shared/utils/types'
+import { TYPE_COLORS, typeColor } from '../shared/utils/types'
+import en from '../i18n/locales/en.json'
+import fr from '../i18n/locales/fr.json'
+import { POKEMON_TYPE_NAMES, STAT_NAMES } from '../shared/types/pokemon'
 
 const stat = (name: string, base_stat: number) => ({
   base_stat,
@@ -101,9 +103,13 @@ describe('totalStats', () => {
   })
 })
 
-describe('libellés', () => {
-  it('a un libellé français pour chaque stat', () => {
-    expect(Object.values(STAT_LABELS)).toEqual([
+describe('libellés (i18n/locales)', () => {
+  it('chaque stat a un libellé en anglais et en français', () => {
+    for (const name of STAT_NAMES) {
+      expect(en.stats[name], `en: stats.${name}`).toBeTruthy()
+      expect(fr.stats[name], `fr: stats.${name}`).toBeTruthy()
+    }
+    expect(STAT_NAMES.map((name) => fr.stats[name])).toEqual([
       'PV',
       'Attaque',
       'Défense',
@@ -111,11 +117,21 @@ describe('libellés', () => {
       'Déf. Spé.',
       'Vitesse',
     ])
+    expect(en.stats.hp).toBe('HP')
   })
 
-  it('donne le libellé et la couleur des types, avec repli sur Normal', () => {
-    expect(typeInfo('electric').label).toBe('Électrik')
-    expect(typeInfo('inconnu')).toEqual(TYPE_INFO.normal)
-    expect(Object.keys(TYPE_INFO)).toHaveLength(18)
+  it('chaque type a un libellé en anglais et en français', () => {
+    for (const name of POKEMON_TYPE_NAMES) {
+      expect(en.types[name], `en: types.${name}`).toBeTruthy()
+      expect(fr.types[name], `fr: types.${name}`).toBeTruthy()
+    }
+    expect(fr.types.electric).toBe('Électrik')
+    expect(en.types.electric).toBe('Electric')
+  })
+
+  it('donne la couleur des types, avec repli sur normal', () => {
+    expect(typeColor('electric')).toBe(TYPE_COLORS.electric)
+    expect(typeColor('inconnu')).toBe(TYPE_COLORS.normal)
+    expect(Object.keys(TYPE_COLORS)).toHaveLength(18)
   })
 })

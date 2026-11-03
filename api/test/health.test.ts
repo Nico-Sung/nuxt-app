@@ -39,7 +39,7 @@ describe('routes inconnues', () => {
 
     expect(res.status).toBe(404)
     expect(await res.json()).toEqual({
-      error: 'Not Found',
+      error: 'Route not found',
       code: 'route_not_found',
     })
   })

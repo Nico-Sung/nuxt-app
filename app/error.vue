@@ -2,6 +2,7 @@
 import type { NuxtError } from '#app'
 
 const props = defineProps<{ error: NuxtError }>()
+const { t } = useI18n()
 
 /**
  * Nom demandé, transmis par la page /pokemon/[name] dans `error.data`.
@@ -28,17 +29,19 @@ const kind = computed(() => {
   return 'unexpected'
 })
 
-// Textes choisis selon le statut : le message HTTP perd ses accents.
-const TITLES = {
-  'pokemon-not-found': 'Pokémon introuvable',
-  'page-not-found': 'Page introuvable',
-  'pokeapi-down': 'PokéAPI indisponible',
-  unexpected: 'Erreur inattendue',
+// Textes choisis selon le statut (le message HTTP, lui, perd ses accents).
+const TITLE_KEYS = {
+  'pokemon-not-found': 'error.title.pokemonNotFound',
+  'page-not-found': 'error.title.pageNotFound',
+  'pokeapi-down': 'error.title.pokeapiDown',
+  unexpected: 'error.title.unexpected',
 } as const
 
-const title = computed(() => TITLES[kind.value])
+const title = computed(() => t(TITLE_KEYS[kind.value]))
 
-useHead({ title: () => `${title.value} · Pokémon à capturer` })
+useHead({
+  title: () => t('app.pageTitle', { title: title.value, app: t('app.title') }),
+})
 
 const goHome = () => clearError({ redirect: '/' })
 const route = useRoute()
@@ -48,24 +51,24 @@ const retry = () => reloadNuxtApp({ path: route.fullPath, ttl: 0 })
 <template>
   <div>
     <header class="header">
-      <NuxtLink to="/" class="brand" @click.prevent="goHome"
-        >Pokémon à capturer</NuxtLink
-      >
+      <NuxtLink to="/" class="brand" @click.prevent="goHome">{{
+        t('app.title')
+      }}</NuxtLink>
+      <LanguageSwitcher />
     </header>
 
     <main class="main">
-      <p class="code">Erreur {{ error.statusCode }}</p>
+      <p class="code">{{ t('error.code', { code: error.statusCode }) }}</p>
       <h1>{{ title }}</h1>
 
       <p v-if="kind === 'pokemon-not-found'">
-        Aucun Pokémon ne s’appelle « {{ requestedName }} ». Vérifie
-        l’orthographe du nom dans l’adresse.
+        {{ t('error.pokemonNotFound', { name: requestedName }) }}
       </p>
-      <p v-else-if="kind === 'page-not-found'">Cette page n’existe pas.</p>
-      <p v-else-if="kind === 'pokeapi-down'">
-        PokéAPI ne répond pas pour le moment. Réessaie dans un instant.
+      <p v-else-if="kind === 'page-not-found'">
+        {{ t('error.pageNotFound') }}
       </p>
-      <p v-else>Quelque chose s’est mal passé.</p>
+      <p v-else-if="kind === 'pokeapi-down'">{{ t('error.pokeapiDown') }}</p>
+      <p v-else>{{ t('error.unexpected') }}</p>
 
       <div class="actions">
         <button
@@ -74,10 +77,10 @@ const retry = () => reloadNuxtApp({ path: route.fullPath, ttl: 0 })
           class="primary"
           @click="retry"
         >
-          Réessayer
+          {{ t('error.retry') }}
         </button>
         <button type="button" class="link" @click="goHome">
-          Retour à ma liste
+          {{ t('error.home') }}
         </button>
       </div>
     </main>
@@ -86,6 +89,10 @@ const retry = () => reloadNuxtApp({ path: route.fullPath, ttl: 0 })
 
 <style scoped>
 .header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
   padding: 16px clamp(16px, 4vw, 32px);
   background: var(--red);
   border-bottom: 4px solid var(--ink);

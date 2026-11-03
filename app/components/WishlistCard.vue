@@ -3,7 +3,7 @@ import type { PokemonDetails } from '#shared/types/pokemon'
 import type { WishlistItem } from '#shared/types/wishlist'
 import { formatNumber } from '#shared/utils/format'
 import { pokemonSlug, smallSpriteUrl } from '#shared/utils/pokeapi'
-import { typeInfo } from '#shared/utils/types'
+import { typeColor } from '#shared/utils/types'
 
 const props = defineProps<{
   item: WishlistItem
@@ -13,6 +13,7 @@ defineEmits<{
   remove: [pokemonId: number]
 }>()
 
+const { t } = useI18n()
 const pokemon = computed(() => props.item.pokemon)
 
 const {
@@ -25,7 +26,7 @@ const {
 
 const mainColor = computed(() => {
   const main = details.value?.types[0]
-  return main ? typeInfo(main).color : '#9099a1'
+  return typeColor(main ?? 'normal')
 })
 const profileUrl = computed(() => `/pokemon/${pokemonSlug(pokemon.value.name)}`)
 
@@ -67,21 +68,23 @@ function onImageError() {
       <StatBars v-if="details" class="card-stats" :stats="details.stats" />
 
       <p v-else-if="status === 'error'" class="stats-error">
-        Stats indisponibles.
-        <button type="button" class="link" @click="refresh()">Réessayer</button>
+        {{ t('card.statsUnavailable') }}
+        <button type="button" class="link" @click="refresh()">
+          {{ t('card.retry') }}
+        </button>
       </p>
 
-      <div v-else class="stats skeleton" aria-label="Chargement des stats">
+      <div v-else class="stats skeleton" :aria-label="t('card.statsLoading')">
         <span v-for="n in 6" :key="n" class="skeleton-row" />
       </div>
 
       <button
         type="button"
         class="remove"
-        :aria-label="`Retirer ${pokemon.name}`"
+        :aria-label="t('card.removeLabel', { name: pokemon.name })"
         @click="$emit('remove', pokemon.id)"
       >
-        Retirer
+        {{ t('card.remove') }}
       </button>
     </div>
   </article>
