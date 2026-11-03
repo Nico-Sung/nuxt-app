@@ -5,6 +5,8 @@ export default defineNuxtConfig({
   devtools: { enabled: true },
   css: ['~/assets/css/main.css'],
   runtimeConfig: {
+    /** PokéAPI, appelée par le serveur Nuxt ; surchargeable avec NUXT_POKEAPI_BASE. */
+    pokeapiBase: 'https://pokeapi.co/api/v2',
     public: {
       /** URL de l'API Hono ; surchargeable avec NUXT_PUBLIC_API_BASE. */
       apiBase: 'http://localhost:3001',

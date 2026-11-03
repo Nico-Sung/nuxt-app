@@ -1,0 +1,16 @@
+{
+  "genera": [
+    { "genus": "Mouse Pokémon", "language": { "name": "en" } },
+    { "genus": "Pokémon Souris", "language": { "name": "fr" } }
+  ],
+  "flavor_text_entries": [
+    {
+      "flavor_text": "When several of\nthese POKéMON\ngather, their\felectricity could\nbuild and cause\nlightning storms.",
+      "language": { "name": "en" }
+    },
+    {
+      "flavor_text": "Il lui arrive de remettre sur\npied un Pikachu allié en\nlui envoyant une décharge\félectrique.",
+      "language": { "name": "fr" }
+    }
+  ]
+}

@@ -1,17 +1,26 @@
 import type {
   Pokemon,
   PokeApiListResponse,
+  PokeApiPokemonProfileResponse,
   PokeApiPokemonResponse,
+  PokeApiSpeciesResponse,
   PokemonDetails,
+  PokemonProfile,
 } from '#shared/types/pokemon'
-import { toPokemon, toPokemonDetails } from '#shared/utils/pokeapi'
+import {
+  idFromUrl,
+  toPokemon,
+  toPokemonDetails,
+  toPokemonProfile,
+} from '#shared/utils/pokeapi'
 
+/** URL par défaut ; surchargeable (runtimeConfig.pokeapiBase / NUXT_POKEAPI_BASE). */
 export const POKEAPI_BASE = 'https://pokeapi.co/api/v2'
 
 /** PokéAPI a répondu 404. */
 export class PokemonNotFoundError extends Error {
-  constructor(id: number) {
-    super(`Pokémon ${id} introuvable`)
+  constructor(idOrName: number | string) {
+    super(`Pokémon ${idOrName} introuvable`)
     this.name = 'PokemonNotFoundError'
   }
 }
@@ -52,20 +61,51 @@ async function getJson<T>(url: string, onNotFound?: () => Error): Promise<T> {
 }
 
 /** Détails (stats, types…) d'un Pokémon. */
-export async function fetchPokemonDetails(id: number): Promise<PokemonDetails> {
+export async function fetchPokemonDetails(
+  id: number,
+  base = POKEAPI_BASE,
+): Promise<PokemonDetails> {
   const data = await getJson<PokeApiPokemonResponse>(
-    `${POKEAPI_BASE}/pokemon/${id}`,
+    `${base}/pokemon/${id}`,
     () => new PokemonNotFoundError(id),
   )
   return toPokemonDetails(data)
 }
 
 /** Liste complète des Pokémon, triée par id. */
-export async function fetchPokemonIndex(): Promise<Pokemon[]> {
+export async function fetchPokemonIndex(
+  base = POKEAPI_BASE,
+): Promise<Pokemon[]> {
   const data = await getJson<PokeApiListResponse>(
-    `${POKEAPI_BASE}/pokemon?limit=100000`,
+    `${base}/pokemon?limit=100000`,
   )
   return data.results.map(toPokemon).sort((a, b) => a.id - b.id)
+}
+
+/**
+ * Fiche d'un Pokémon par son nom PokéAPI ("pikachu").
+ * L'espèce (catégorie, description) est facultative : si elle échoue,
+ * la fiche est renvoyée sans ces deux champs plutôt que pas du tout.
+ */
+export async function fetchPokemonProfile(
+  slug: string,
+  base = POKEAPI_BASE,
+): Promise<PokemonProfile> {
+  const data = await getJson<PokeApiPokemonProfileResponse>(
+    `${base}/pokemon/${encodeURIComponent(slug)}`,
+    () => new PokemonNotFoundError(slug),
+  )
+
+  let species: PokeApiSpeciesResponse | null
+  try {
+    species = await getJson<PokeApiSpeciesResponse>(
+      `${base}/pokemon-species/${idFromUrl(data.species.url)}`,
+    )
+  } catch {
+    species = null
+  }
+
+  return toPokemonProfile(data, species)
 }
 
 /** Traduit une erreur PokéAPI en réponse HTTP de notre API. */

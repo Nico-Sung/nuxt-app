@@ -10,7 +10,10 @@ export default defineCachedEventHandler(
     }
 
     try {
-      return await fetchPokemonDetails(Number(raw))
+      return await fetchPokemonDetails(
+        Number(raw),
+        useRuntimeConfig(event).pokeapiBase,
+      )
     } catch (cause) {
       throw createError({ ...toHttpError(cause), cause })
     }

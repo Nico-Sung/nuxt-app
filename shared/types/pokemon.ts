@@ -69,3 +69,42 @@ export interface PokeApiPokemonResponse {
   types: { slot: number; type: { name: string } }[]
   stats: { base_stat: number; stat: { name: string } }[]
 }
+
+/** Talent d'un Pokémon (nom anglais formaté). */
+export interface PokemonAbility {
+  readonly name: string
+  /** Talent caché (obtenu sous conditions). */
+  readonly hidden: boolean
+}
+
+/** Fiche complète d'un Pokémon : page /pokemon/[name]. */
+export interface PokemonProfile extends PokemonDetails {
+  /** Nom PokéAPI, utilisé dans l'URL : "mr-mime". */
+  readonly slug: string
+  /** Nom affiché : "Mr Mime". */
+  readonly name: string
+  readonly sprite: string
+  /** Catégorie, ex. « Pokémon Souris » ; null si indisponible. */
+  readonly genus: string | null
+  /** Description du Pokédex (français, sinon anglais) ; null si indisponible. */
+  readonly description: string | null
+  readonly abilities: readonly PokemonAbility[]
+}
+
+/** Réponse brute de GET /pokemon/{name} avec les champs de la fiche. */
+export interface PokeApiPokemonProfileResponse extends PokeApiPokemonResponse {
+  name: string
+  species: { name: string; url: string }
+  abilities: { ability: { name: string }; is_hidden: boolean; slot: number }[]
+}
+
+/** Texte traduit renvoyé par PokéAPI. */
+export interface PokeApiLocalized {
+  language: { name: string }
+}
+
+/** Réponse brute de GET /pokemon-species/{id} (champs utilisés). */
+export interface PokeApiSpeciesResponse {
+  genera: (PokeApiLocalized & { genus: string })[]
+  flavor_text_entries: (PokeApiLocalized & { flavor_text: string })[]
+}

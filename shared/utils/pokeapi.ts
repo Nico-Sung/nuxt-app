@@ -1,8 +1,12 @@
 import type {
   Pokemon,
   PokeApiListItem,
+  PokeApiLocalized,
+  PokeApiPokemonProfileResponse,
   PokeApiPokemonResponse,
+  PokeApiSpeciesResponse,
   PokemonDetails,
+  PokemonProfile,
   StatName,
 } from '../types/pokemon'
 import { STAT_NAMES } from '../types/pokemon'
@@ -63,5 +67,68 @@ export function toPokemonDetails(data: PokeApiPokemonResponse): PokemonDetails {
     stats,
     height: data.height,
     weight: data.weight,
+  }
+}
+
+/** Nom PokéAPI valide dans une URL : minuscules, chiffres et tirets ("mr-mime"). */
+export function isPokemonSlug(value: string): boolean {
+  return value.length <= 50 && /^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value)
+}
+
+/** "Mr Mime" -> "mr-mime" : l'inverse de formatName, pour les liens. */
+export function pokemonSlug(name: string): string {
+  return name.trim().toLowerCase().replace(/\s+/g, '-')
+}
+
+/** Langues des textes de la fiche, par ordre de préférence. */
+export const PROFILE_LANGUAGES = ['fr', 'en'] as const
+
+/**
+ * Entrée dans la première langue disponible ; pour une langue donnée,
+ * la plus récente (PokéAPI les range du plus ancien jeu au plus récent).
+ */
+export function pickLocalized<T extends PokeApiLocalized>(
+  entries: readonly T[],
+  languages: readonly string[] = PROFILE_LANGUAGES,
+): T | undefined {
+  for (const language of languages) {
+    const matches = entries.filter((e) => e.language.name === language)
+    if (matches.length) return matches[matches.length - 1]
+  }
+  return undefined
+}
+
+/**
+ * Nettoie un texte du Pokédex : PokéAPI garde les retours à la ligne
+ * et sauts de page (\f) des jeux, et des césures (trait d'union conditionnel).
+ */
+export function cleanFlavorText(text: string): string {
+  return text
+    .replace(/\u00ad\s*/g, '')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/**
+ * Transforme GET /pokemon/{name} (+ GET /pokemon-species/{id}) en fiche.
+ * Sans espèce (indisponible), la fiche n'a ni catégorie ni description.
+ */
+export function toPokemonProfile(
+  data: PokeApiPokemonProfileResponse,
+  species: PokeApiSpeciesResponse | null,
+): PokemonProfile {
+  const flavor = species && pickLocalized(species.flavor_text_entries)
+  const genus = species && pickLocalized(species.genera)
+
+  return {
+    ...toPokemonDetails(data),
+    slug: data.name,
+    name: formatName(data.name),
+    sprite: spriteUrl(data.id),
+    genus: genus ? genus.genus : null,
+    description: flavor ? cleanFlavorText(flavor.flavor_text) : null,
+    abilities: [...data.abilities]
+      .sort((a, b) => a.slot - b.slot)
+      .map((a) => ({ name: formatName(a.ability.name), hidden: a.is_hidden })),
   }
 }
