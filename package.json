@@ -16,7 +16,8 @@
     "dev:api": "npm --prefix api run dev",
     "test:e2e": "playwright test",
     "i18n:check": "node scripts/check-locales.mjs i18n/locales api/src/locales",
-    "pokemon-names": "node scripts/generate-pokemon-names.mjs"
+    "pokemon-names": "node scripts/generate-pokemon-names.mjs",
+    "check:prod": "node scripts/check-production.mjs"
   },
   "dependencies": {
     "nuxt": "^4.6.3",

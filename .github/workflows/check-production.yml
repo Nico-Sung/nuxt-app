@@ -1,0 +1,40 @@
+name: Contrôle de la production
+
+# Lancé par la CI après les deux déploiements (workflow_call), ou à la main
+# depuis Actions → « Contrôle de la production » → Run workflow.
+on:
+  workflow_dispatch:
+    inputs:
+      extra_url:
+        description: URL critique en plus, attendue en 200 (facultatif)
+        required: false
+        default: ''
+  workflow_call:
+    inputs:
+      expected_commit:
+        description: Hash court du commit qui doit être en ligne
+        type: string
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    name: Contrôle de la production
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+      # Script sans dépendance : pas de npm ci. Tableau dans le résumé du run.
+      - name: /health, pages SSR et SSG, codes HTTP
+        run: node scripts/check-production.mjs
+        env:
+          API_URL: ${{ vars.API_URL }}
+          PRODUCTION_URL: ${{ vars.PRODUCTION_URL }}
+          STATIC_URL: ${{ vars.STATIC_URL }}
+          EXPECTED_COMMIT: ${{ inputs.expected_commit }}
+          EXTRA_URL: ${{ inputs.extra_url }}
