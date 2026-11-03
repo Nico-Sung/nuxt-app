@@ -1,0 +1,8 @@
+# Vercel transforme tout dossier api/ à la racine en fonctions serverless :
+# ici, api/ est l'API Hono (déployée sur AWS Lambda), pas du code Vercel.
+/api
+/infra
+/e2e
+/test
+/scripts
+/supabase
