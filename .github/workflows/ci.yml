@@ -327,7 +327,9 @@ jobs:
         run: |
           expected="${GITHUB_SHA::7}"
           for i in $(seq 1 20); do
-            commit=$(curl -s "$PRODUCTION_URL/api/health" | jq -r '.commit // empty')
+            # Juste après le déploiement, la réponse peut ne pas encore être du JSON :
+            # on réessaie au lieu d'échouer.
+            commit=$(curl -s "$PRODUCTION_URL/api/health" | jq -r '.commit // empty' 2>/dev/null || true)
             echo "essai $i : en ligne = ${commit:-?}, attendu = $expected"
             [ "$commit" = "$expected" ] && exit 0
             sleep 3
