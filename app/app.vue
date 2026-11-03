@@ -6,6 +6,11 @@ useHead({
   htmlAttrs: { lang: locale },
   title: () => t('app.title'),
 })
+
+// Description pour les moteurs de recherche et les aperçus de liens.
+useSeoMeta({
+  description: () => t('app.description'),
+})
 </script>
 
 <template>

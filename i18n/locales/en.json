@@ -1,6 +1,7 @@
 {
   "app": {
     "title": "Pokémon to catch",
+    "description": "Search for Pokémon and build your list of up to 6 to catch, with their stats and Pokédex entry.",
     "pageTitle": "{title} · {app}"
   },
   "language": {

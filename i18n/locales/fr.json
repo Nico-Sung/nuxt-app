@@ -1,6 +1,7 @@
 {
   "app": {
     "title": "Pokémon à capturer",
+    "description": "Recherche des Pokémon et compose ta liste de 6 à capturer, avec leurs stats et leur fiche Pokédex.",
     "pageTitle": "{title} · {app}"
   },
   "language": {
