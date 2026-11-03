@@ -3,7 +3,7 @@ import withNuxt from './.nuxt/eslint.config.mjs'
 
 export default withNuxt(
   // L'API Hono (api/) est un package séparé : hors config ESLint Nuxt.
-  { ignores: ['api/**'] },
+  { ignores: ['api/**', 'infra/**'] },
   {
     rules: {
       // Pas de logs de debug ni de points d'arrêt dans le code poussé.

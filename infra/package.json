@@ -1,0 +1,22 @@
+{
+  "name": "pokemon-infra",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit",
+    "build:lambda": "npm --prefix ../api run build:lambda",
+    "synth": "npm run build:lambda && cdk synth --quiet",
+    "diff": "npm run build:lambda && cdk diff",
+    "deploy": "npm run build:lambda && cdk deploy --require-approval never",
+    "destroy": "cdk destroy"
+  },
+  "devDependencies": {
+    "@types/node": "^26.6.6",
+    "aws-cdk": "^2.1147.0",
+    "aws-cdk-lib": "^2.275.0",
+    "constructs": "^10.8.1",
+    "tsx": "^4.23.15",
+    "typescript": "~6.0.3"
+  }
+}
