@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest'
 import { createApp, type ErrorCode, type ErrorResponse } from '../src/app.js'
 import { translate } from '../src/i18n.js'
-import en from '../locales/en.json' with { type: 'json' }
-import fr from '../locales/fr.json' with { type: 'json' }
+import en from '../src/locales/en.json' with { type: 'json' }
+import fr from '../src/locales/fr.json' with { type: 'json' }
 
 const ERROR_CODES: ErrorCode[] = [
   'invalid_body',

@@ -14,9 +14,11 @@
     "format:check": "prettier --check .",
     "test:db": "vitest run --config vitest.db.config.ts",
     "db:test:up": "docker compose -f compose.test.yml up -d --wait",
-    "db:test:down": "docker compose -f compose.test.yml down"
+    "db:test:down": "docker compose -f compose.test.yml down",
+    "build:lambda": "node scripts/build-lambda.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-ssm": "^3.1161.0",
     "@hono/node-server": "^2.1.6",
     "hono": "^4.13.16",
     "postgres": "^4.0.0"
@@ -24,6 +26,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.6.6",
+    "esbuild": "^0.28.2",
     "eslint": "^10.14.0",
     "globals": "^17.14.0",
     "prettier": "^3.9.10",

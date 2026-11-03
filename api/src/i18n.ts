@@ -1,4 +1,5 @@
-import { createRequire } from 'node:module'
+import en from './locales/en.json' with { type: 'json' }
+import fr from './locales/fr.json' with { type: 'json' }
 
 /** Langues de l'API ; l'anglais est la référence et la langue par défaut. */
 export const LANGUAGES = ['en', 'fr'] as const
@@ -7,12 +8,8 @@ export const DEFAULT_LANGUAGE: Language = 'en'
 
 type Messages = { [key: string]: string | Messages }
 
-// Lus depuis api/locales (même chemin relatif depuis src/ et dist/).
-const require = createRequire(import.meta.url)
-const MESSAGES: Record<Language, Messages> = {
-  en: require('../locales/en.json') as Messages,
-  fr: require('../locales/fr.json') as Messages,
-}
+// Importés (et non lus sur le disque) : inclus dans le paquet Lambda.
+const MESSAGES: Record<Language, Messages> = { en, fr }
 
 function lookup(messages: Messages, key: string): string | undefined {
   let node: string | Messages | undefined = messages

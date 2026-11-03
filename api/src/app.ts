@@ -40,8 +40,19 @@ export interface AppOptions {
   commit: string
   /** Stockage de la liste ; une liste en mémoire neuve par défaut (isole les tests). */
   store?: WishlistStore
-  /** Origine autorisée à appeler l'API depuis un navigateur (le front Nuxt). */
+  /**
+   * Origine(s) autorisée(s) à appeler l'API depuis un navigateur (le front Nuxt),
+   * séparées par des virgules : "http://localhost:3000,https://mon-front.app".
+   */
   corsOrigin?: string
+}
+
+/** "a, b,,c" -> ["a", "b", "c"] */
+export function parseOrigins(value: string): string[] {
+  return value
+    .split(',')
+    .map((origin) => origin.trim())
+    .filter(Boolean)
 }
 
 /** "25" -> 25 ; tout ce qui n'est pas un entier positif -> null. */
@@ -79,7 +90,7 @@ export function createApp({
   app.use(
     '*',
     cors({
-      origin: corsOrigin,
+      origin: parseOrigins(corsOrigin),
       allowMethods: ['GET', 'POST', 'DELETE', 'OPTIONS'],
       allowHeaders: ['Content-Type', 'Accept-Language'],
     }),

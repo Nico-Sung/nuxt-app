@@ -85,11 +85,17 @@ export function databaseHost(url: string): string {
   return new URL(url).hostname
 }
 
+/** Exécuté dans AWS Lambda : une requête à la fois par instance. */
+const isLambda = () => Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME)
+
 /** Connexion à partir d'une URL (Supabase, ou la base de test locale). */
 export function connect(url: string): postgres.Sql {
   return postgres(url, {
     // Compatible avec le pooler Supabase en mode transaction.
     prepare: false,
+    // Lambda : une seule connexion par instance, réutilisée entre les requêtes
+    // et fermée après 20 s d'inactivité (l'instance peut être gelée longtemps).
+    ...(isLambda() ? { max: 1, idle_timeout: 20 } : {}),
     // Chiffrement obligatoire hors de la machine (Supabase) ; pas en local (Docker).
     ssl: LOCAL_HOSTS.has(databaseHost(url)) ? false : 'require',
     onnotice: () => {},

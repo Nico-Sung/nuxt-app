@@ -175,6 +175,6 @@ describe('checkDirectory et run (vrais fichiers)', () => {
 
 describe('les vraies langues du projet', () => {
   it('front et API : mêmes clés que en.json', () => {
-    expect(run(['i18n/locales', 'api/locales'], () => {})).toBe(0)
+    expect(run(['i18n/locales', 'api/src/locales'], () => {})).toBe(0)
   })
 })
