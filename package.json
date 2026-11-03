@@ -18,7 +18,8 @@
     "i18n:check": "node scripts/check-locales.mjs i18n/locales api/src/locales",
     "pokemon-names": "node scripts/generate-pokemon-names.mjs",
     "check:prod": "node scripts/check-production.mjs",
-    "compare:ssr-ssg": "node scripts/compare-ssr-ssg.mjs"
+    "compare:ssr-ssg": "node scripts/compare-ssr-ssg.mjs",
+    "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
     "nuxt": "^4.6.3",
@@ -30,6 +31,7 @@
     "@nuxtjs/i18n": "^10.6.0",
     "@playwright/test": "^1.64.1",
     "@types/node": "^26.6.6",
+    "@vitest/coverage-v8": "^5.0.5",
     "eslint": "^10.14.0",
     "postgres": "^4.0.0",
     "prettier": "^3.9.10",

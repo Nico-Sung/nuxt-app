@@ -2,3 +2,4 @@ package-lock.json
 api/
 # généré par scripts/generate-pokemon-names.mjs (une entrée par ligne)
 shared/data/
+coverage

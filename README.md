@@ -1,75 +1,47 @@
-# Nuxt Minimal Starter
+# Pokémon à capturer
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+[![CI](https://github.com/Nico-Sung/nuxt-app/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Nico-Sung/nuxt-app/actions/workflows/ci.yml)
+[![coverage front](https://raw.githubusercontent.com/Nico-Sung/nuxt-app/badges/coverage-front.svg)](https://github.com/Nico-Sung/nuxt-app/tree/badges)
+[![coverage API](https://raw.githubusercontent.com/Nico-Sung/nuxt-app/badges/coverage-api.svg)](https://github.com/Nico-Sung/nuxt-app/tree/badges)
 
-## Setup
+Liste de 6 Pokémon à capturer : recherche (français ou anglais), fiches,
+likes. Interface en français et en anglais.
 
-Make sure to install dependencies:
+- **SSR (Vercel)** : https://pokemon-a-capturer.vercel.app
+- **SSG (S3 + CloudFront)** : https://dmw3t5lkpaeli.cloudfront.net
+- **Rapport de couverture** : branche [`badges`](https://github.com/Nico-Sung/nuxt-app/tree/badges), mis à jour à chaque push sur `main`
 
-```bash
-# npm
-npm install
+## Architecture
 
-# pnpm
-pnpm install
+| Dossier                      | Contenu                                                           |
+| ---------------------------- | ----------------------------------------------------------------- |
+| `app/`, `server/`, `shared/` | front Nuxt 4 (pages, composants, routes serveur PokéAPI)          |
+| `api/`                       | API Hono (liste, likes) : Node en local, AWS Lambda en production |
+| `infra/`                     | AWS CDK : Lambda + API Gateway, S3 + CloudFront                   |
+| `supabase/migrations/`       | schéma Postgres (runner SQL maison)                               |
+| `i18n/locales/`              | traductions FR / EN                                               |
+| `e2e/`                       | tests Playwright (navigateur → Nuxt → API → Postgres)             |
 
-# yarn
-yarn install
-
-# bun
-bun install
-```
-
-## Development Server
-
-Start the development server on `http://localhost:3000`:
-
-```bash
-# npm
-npm run dev
-
-# pnpm
-pnpm dev
-
-# yarn
-yarn dev
-
-# bun
-bun run dev
-```
-
-## Production
-
-Build the application for production:
+## Commandes
 
 ```bash
-# npm
-npm run build
+npm install && npm --prefix api install
+npm run dev                 # front, http://localhost:3000
+npm run dev:api             # API, http://localhost:3001
 
-# pnpm
-pnpm build
+npm test                    # tests unitaires du front
+npm run test:coverage       # … avec la couverture (coverage/index.html)
+npm --prefix api test       # tests unitaires de l'API
+npm --prefix api run db:test:up && npm --prefix api run test:db   # API sur Postgres
+npm run build && npm run test:e2e                                  # E2E Playwright
 
-# yarn
-yarn build
-
-# bun
-bun run build
+npm run lint && npm run format:check && npm run typecheck && npm run i18n:check
+npm run check:prod          # contrôle de la production
 ```
 
-Locally preview production build:
+## Déploiement
 
-```bash
-# npm
-npm run preview
-
-# pnpm
-pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
-```
-
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+Tout passe par la CI : après réussite de tous les jobs sur `main`, le front est
+déployé sur Vercel (SSR) et sur S3 + CloudFront (SSG), puis la production est
+contrôlée. Retour à une version précédente : workflow « Revenir à une version
+précédente ». Détails : [docs/deploiement.md](docs/deploiement.md).

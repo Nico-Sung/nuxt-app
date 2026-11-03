@@ -16,7 +16,8 @@
     "db:test:up": "docker compose -f compose.test.yml up -d --wait",
     "db:test:down": "docker compose -f compose.test.yml down",
     "build:lambda": "node scripts/build-lambda.mjs",
-    "migrate": "tsx --env-file-if-exists=.env src/migrate.ts"
+    "migrate": "tsx --env-file-if-exists=.env src/migrate.ts",
+    "test:coverage": "vitest run --config vitest.coverage.config.ts --coverage"
   },
   "dependencies": {
     "@aws-sdk/client-ssm": "^3.1161.0",
@@ -27,6 +28,7 @@
   "devDependencies": {
     "@eslint/js": "^10.0.1",
     "@types/node": "^26.6.6",
+    "@vitest/coverage-v8": "^5.0.5",
     "esbuild": "^0.28.2",
     "eslint": "^10.14.0",
     "globals": "^17.14.0",

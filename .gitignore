@@ -33,3 +33,6 @@ api/dist-lambda
 infra/cdk.out
 .vercel
 .env*
+
+# rapports de couverture (Vitest)
+coverage

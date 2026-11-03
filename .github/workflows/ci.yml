@@ -67,7 +67,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
-      - run: npm test
+      - name: Tests + couverture
+        run: npm run test:coverage
+      # Tableau dans le résumé du run + badge SVG (publié par coverage-badges)
+      - name: Rapport de couverture
+        run: >-
+          node scripts/coverage-report.mjs --summary coverage/coverage-summary.json
+          --name front --label "front (logique TS)" --out coverage-badge
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-front-html
+          path: coverage
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-badge-front
+          path: coverage-badge
+          retention-days: 7
 
   build:
     name: Build
@@ -170,7 +186,7 @@ jobs:
 
   # Routes de l'API sur un vrai Postgres (schéma = supabase/migrations, appliquées par le runner), sans mock SQL
   api-test-db:
-    name: API · Tests BDD (Postgres)
+    name: API · Tests BDD + couverture
     needs: api-install
     runs-on: ubuntu-latest
     defaults:
@@ -193,9 +209,25 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup-api
-      - run: npm run test:db
+      # Tests unitaires ET tests sur Postgres, en un seul calcul de couverture
+      - name: Tests + couverture
+        run: npm run test:coverage
         env:
           TEST_DATABASE_URL: postgres://postgres:postgres@localhost:54329/wishlist_test
+      - name: Rapport de couverture
+        run: >-
+          node ../scripts/coverage-report.mjs --summary coverage/coverage-summary.json
+          --name api --label API --out coverage-badge
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-api-html
+          path: api/coverage
+          retention-days: 30
+      - uses: actions/upload-artifact@v4
+        with:
+          name: coverage-badge-api
+          path: api/coverage-badge
+          retention-days: 7
 
   api-health:
     name: API · Build + /health
@@ -453,3 +485,65 @@ jobs:
     uses: ./.github/workflows/check-production.yml
     with:
       expected_commit: ${{ github.sha }}
+
+  # ---------- Badges et rapport de couverture (branche « badges ») ----------
+
+  coverage-badges:
+    name: Couverture (badges)
+    needs: [test, api-test-db]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: coverage-badges
+      cancel-in-progress: false
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: coverage-badge-*
+          path: badges
+          merge-multiple: true
+
+      # Branche dédiée (pas main) : ni commit parasite sur main, ni CI relancée.
+      - name: Publier sur la branche badges
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: |
+          site=$(mktemp -d)
+          git -C "$site" init -q
+          git -C "$site" remote add origin "https://x-access-token:${GH_TOKEN}@github.com/${GITHUB_REPOSITORY}.git"
+          if git -C "$site" fetch -q --depth 1 origin badges; then
+            git -C "$site" checkout -q -b badges FETCH_HEAD
+          else
+            git -C "$site" checkout -q --orphan badges
+          fi
+
+          cp badges/coverage-front.svg badges/coverage-api.svg "$site/"
+          {
+            echo "# Couverture des tests"
+            echo
+            echo "Dernier rapport de \`main\` : commit [\`${GITHUB_SHA::7}\`](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA}), $(date -u '+%Y-%m-%d %H:%M UTC')."
+            echo "Rapports HTML complets (fichier par fichier, ligne par ligne) : artefacts \`coverage-front-html\` et \`coverage-api-html\` du [run]($RUN_URL)."
+            echo
+            echo "![coverage front](coverage-front.svg) ![coverage API](coverage-api.svg)"
+            echo
+            cat badges/coverage-front.md
+            echo
+            cat badges/coverage-api.md
+            echo
+            echo "_Front : logique TypeScript testée par Vitest (app/utils, shared/utils, server/lib, build, scripts) ; les composants .vue, composables et routes Nuxt sont couverts par les tests E2E Playwright. API : tests unitaires + tests sur Postgres réunis._"
+          } > "$site/README.md"
+
+          cd "$site"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --cached --quiet; then
+            echo "Couverture inchangée."
+          else
+            git commit -q -m "coverage: ${GITHUB_SHA::7}"
+            git push -q origin badges
+            echo "Badges et rapport publiés pour ${GITHUB_SHA::7}."
+          fi
