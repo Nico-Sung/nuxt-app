@@ -1,0 +1,209 @@
+name: Revenir à une version précédente
+
+# Actions → « Revenir à une version précédente » → Run workflow.
+# Sans commit : le dernier déploiement stable avant celui en ligne.
+# Stable = commit de main dont toute la CI a réussi (déploiements + contrôle
+# de la production). Remet ce commit en ligne sur Vercel (SSR) et CloudFront
+# (SSG), puis contrôle la production. Le prochain push sur main redéploie la
+# dernière version.
+on:
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: Commit à remettre en ligne (vide = le déploiement stable précédent)
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  target:
+    name: Choisir la version
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+    outputs:
+      sha: ${{ steps.pick.outputs.sha }}
+      run_id: ${{ steps.pick.outputs.run_id }}
+    steps:
+      - id: pick
+        env:
+          GH_TOKEN: ${{ github.token }}
+          REQUESTED: ${{ inputs.commit }}
+          STATIC_URL: ${{ vars.STATIC_URL }}
+        run: |
+          # Runs réussis de la CI sur main (du plus récent au plus ancien)
+          runs=$(gh run list -R "$GITHUB_REPOSITORY" --workflow ci.yml --branch main \
+            --event push --status success --limit 100 --json databaseId,headSha)
+          current=$(curl -s "$STATIC_URL/version.json" | jq -r '.commit // empty' || true)
+          echo "En ligne : ${current:-inconnu}"
+
+          if [ -n "$REQUESTED" ]; then
+            pick=$(echo "$runs" | jq -c --arg c "$REQUESTED" \
+              '[.[] | select(.headSha | startswith($c))][0] // empty')
+            [ -n "$pick" ] || { echo "::error::$REQUESTED n'est pas un déploiement stable (CI réussie sur main)"; exit 1; }
+          else
+            # celui juste avant la version en ligne
+            pick=$(echo "$runs" | jq -c --arg cur "$current" \
+              '(map(.headSha[0:7]) | index($cur)) as $i
+               | if $i == null then .[0] else .[$i + 1] end // empty')
+            [ -n "$pick" ] || { echo "::error::Aucun déploiement stable avant $current"; exit 1; }
+          fi
+
+          sha=$(echo "$pick" | jq -r .headSha)
+          echo "sha=$sha" >> "$GITHUB_OUTPUT"
+          echo "run_id=$(echo "$pick" | jq -r .databaseId)" >> "$GITHUB_OUTPUT"
+          echo "### Retour à ${sha::7} (en ligne avant : ${current:-inconnu})" >> "$GITHUB_STEP_SUMMARY"
+          echo "Version choisie : $sha"
+
+  vercel:
+    name: Vercel (SSR)
+    needs: target
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}
+    # même verrou que le déploiement : jamais en même temps
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    env:
+      SHA: ${{ needs.target.outputs.sha }}
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_CLI: vercel@65.10.0
+      PRODUCTION_URL: ${{ vars.PRODUCTION_URL }}
+    steps:
+      # Vercel garde chaque déploiement, avec son commit (githubCommitSha).
+      - name: Retrouver le déploiement de ce commit
+        id: find
+        run: |
+          url=$(npx -y "$VERCEL_CLI" ls pokemon-a-capturer --environment production \
+            --meta "githubCommitSha=$SHA" --json --token="$VERCEL_TOKEN" 2>/dev/null \
+            | jq -r '[.deployments[] | select(.state == "READY")][0].url // empty')
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Déploiement de ${SHA::7} : ${url:-introuvable (il sera reconstruit)}"
+
+      - name: Remettre ce déploiement en ligne (sans rebuild)
+        if: steps.find.outputs.url != ''
+        run: npx -y "$VERCEL_CLI" promote "https://${{ steps.find.outputs.url }}" --yes --token="$VERCEL_TOKEN"
+
+      # Déploiement introuvable (trop ancien) : on reconstruit ce commit.
+      - uses: actions/checkout@v4
+        if: steps.find.outputs.url == ''
+        with:
+          ref: ${{ env.SHA }}
+      - uses: actions/setup-node@v4
+        if: steps.find.outputs.url == ''
+        with:
+          node-version: 24
+          cache: npm
+      - name: Reconstruire et déployer ce commit
+        if: steps.find.outputs.url == ''
+        env:
+          NITRO_PRESET: vercel
+          GITHUB_SHA: ${{ env.SHA }}
+        run: |
+          npm ci
+          npx -y "$VERCEL_CLI" pull --yes --environment=production --token="$VERCEL_TOKEN"
+          npx -y "$VERCEL_CLI" build --prod --token="$VERCEL_TOKEN"
+          npx -y "$VERCEL_CLI" deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+
+      - name: Vercel sert ce commit
+        run: |
+          for i in $(seq 1 20); do
+            commit=$(curl -s "$PRODUCTION_URL/api/health" | jq -r '.commit // empty' 2>/dev/null || true)
+            echo "essai $i : en ligne = ${commit:-?}, attendu = ${SHA::7}"
+            [ "$commit" = "${SHA::7}" ] && exit 0
+            sleep 3
+          done
+          exit 1
+
+  static:
+    name: CloudFront (SSG)
+    needs: target
+    runs-on: ubuntu-latest
+    environment:
+      name: static
+      url: ${{ vars.STATIC_URL }}
+    permissions:
+      id-token: write
+      actions: read
+      contents: read
+    concurrency:
+      group: deploy-static
+      cancel-in-progress: false
+    env:
+      SHA: ${{ needs.target.outputs.sha }}
+      STATIC_URL: ${{ vars.STATIC_URL }}
+      STATIC_BUCKET: ${{ vars.STATIC_BUCKET }}
+      STATIC_DISTRIBUTION_ID: ${{ vars.STATIC_DISTRIBUTION_ID }}
+    steps:
+      # Le site exact généré lors du déploiement de ce commit (gardé 30 jours).
+      - name: Récupérer le site de ce commit
+        id: artifact
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: site-statique-${{ env.SHA }}
+          path: site
+          run-id: ${{ needs.target.outputs.run_id }}
+          github-token: ${{ github.token }}
+
+      # Artefact introuvable (expiré ou plus ancien) : on régénère ce commit.
+      - uses: actions/checkout@v4
+        if: steps.artifact.outcome != 'success'
+        with:
+          ref: ${{ env.SHA }}
+      - uses: actions/setup-node@v4
+        if: steps.artifact.outcome != 'success'
+        with:
+          node-version: 24
+          cache: npm
+      - name: Régénérer le site de ce commit
+        if: steps.artifact.outcome != 'success'
+        env:
+          NUXT_PUBLIC_STATIC_SITE: '1'
+          PRERENDER_POKEMON: '1'
+          NUXT_PUBLIC_API_BASE: ${{ vars.API_URL }}
+          GITHUB_SHA: ${{ env.SHA }}
+        run: |
+          npm ci
+          npx nuxt generate
+          mv .output/public site
+
+      - name: Le site à remettre est bien ce commit
+        run: |
+          echo "$(find site/pokemon -name index.html | wc -l) fiches HTML"
+          jq -e --arg c "${SHA::7}" '.commit == $c' site/version.json
+
+      - uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
+          aws-region: eu-west-1
+
+      - name: Sync S3
+        run: |
+          aws s3 sync site/_nuxt "s3://$STATIC_BUCKET/_nuxt" \
+            --cache-control "public,max-age=31536000,immutable" --only-show-errors
+          aws s3 sync site "s3://$STATIC_BUCKET" --exclude "_nuxt/*" --delete \
+            --cache-control "public,max-age=0,must-revalidate" --only-show-errors
+
+      - name: Invalidation CloudFront
+        run: |
+          id=$(aws cloudfront create-invalidation --distribution-id "$STATIC_DISTRIBUTION_ID" \
+            --paths '/*' --query Invalidation.Id --output text)
+          aws cloudfront wait invalidation-completed --distribution-id "$STATIC_DISTRIBUTION_ID" --id "$id"
+          commit=$(curl -s "$STATIC_URL/version.json" | jq -r '.commit // empty' || true)
+          echo "en ligne = ${commit:-?}, attendu = ${SHA::7}"
+          test "$commit" = "${SHA::7}"
+
+  check:
+    name: Contrôle de la production
+    needs: [target, vercel, static]
+    uses: ./.github/workflows/check-production.yml
+    with:
+      expected_commit: ${{ needs.target.outputs.sha }}

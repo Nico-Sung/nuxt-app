@@ -404,6 +404,16 @@ jobs:
           grep -q 'Statik' pokemon/pikachu/index.html
           jq -e --arg c "${GITHUB_SHA::7}" '.commit == $c' version.json
 
+      # Gardé 30 jours : un retour en arrière (rollback.yml) remet exactement
+      # ces fichiers en ligne, sans rien régénérer.
+      - name: Conserver le site généré
+        uses: actions/upload-artifact@v4
+        with:
+          name: site-statique-${{ github.sha }}
+          path: .output/public
+          retention-days: 30
+          if-no-files-found: error
+
       - uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: ${{ vars.AWS_DEPLOY_ROLE_ARN }}
