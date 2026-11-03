@@ -6,7 +6,8 @@ on:
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  # Sur main, jamais d'annulation : un déploiement ne doit pas être coupé en route.
+  cancel-in-progress: ${{ github.ref != 'refs/heads/main' }}
 
 jobs:
   install:
@@ -284,3 +285,48 @@ jobs:
             playwright-report
             test-results
           retention-days: 7
+
+  # ---------- Déploiement du front (Vercel), après réussite de toute la CI ----------
+
+  deploy:
+    name: Deploy (Vercel)
+    needs: [build, e2e, i18n, infra-synth]
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}
+    concurrency:
+      group: deploy-production
+      cancel-in-progress: false
+    env:
+      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+      VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+      VERCEL_CLI: vercel@65.10.0
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+
+      - name: Configuration Vercel (production)
+        run: npx -y "$VERCEL_CLI" pull --yes --environment=production --token="$VERCEL_TOKEN"
+
+      # Nuxt compilé en SSR (preset vercel) dans la CI ; GITHUB_SHA -> /api/health
+      - name: Build
+        run: npx -y "$VERCEL_CLI" build --prod --token="$VERCEL_TOKEN"
+
+      - name: Déploiement
+        run: npx -y "$VERCEL_CLI" deploy --prebuilt --prod --token="$VERCEL_TOKEN"
+
+      - name: Le site en ligne sert ce commit
+        env:
+          PRODUCTION_URL: ${{ vars.PRODUCTION_URL }}
+        run: |
+          expected="${GITHUB_SHA::7}"
+          for i in $(seq 1 20); do
+            commit=$(curl -s "$PRODUCTION_URL/api/health" | jq -r '.commit // empty')
+            echo "essai $i : en ligne = ${commit:-?}, attendu = $expected"
+            [ "$commit" = "$expected" ] && exit 0
+            sleep 3
+          done
+          exit 1

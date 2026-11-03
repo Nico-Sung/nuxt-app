@@ -31,3 +31,5 @@ test-results
 playwright-report
 api/dist-lambda
 infra/cdk.out
+.vercel
+.env*

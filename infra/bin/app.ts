@@ -27,8 +27,14 @@ new ApiStack(app, 'PokemonApi', {
   },
   version: apiPackage.version,
   gitSha: gitSha(),
+  // Front Nuxt : production (Vercel) + dev local et E2E.
   corsOrigin:
-    process.env.CORS_ORIGIN ?? 'http://localhost:3000,http://localhost:3200',
+    process.env.CORS_ORIGIN ??
+    [
+      'https://pokemon-a-capturer.vercel.app',
+      'http://localhost:3000',
+      'http://localhost:3200',
+    ].join(','),
   databaseUrlParameter: '/pokemon-api/database-url',
   tags: { project: 'pokemon-wishlist' },
 })
