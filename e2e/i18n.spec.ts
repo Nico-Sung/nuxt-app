@@ -65,8 +65,16 @@ test.describe('sélecteur de langue', () => {
       'true',
     )
     await expect(page.getByText('Ta liste est vide.')).toBeVisible()
+    await expect(page.locator('meta[name="description"]')).toHaveAttribute(
+      'content',
+      /^Recherche des Pokémon et compose ta liste de 6 à capturer/,
+    )
 
     await languageButton(page, 'English').click()
+    await expect(page.locator('meta[name="description"]')).toHaveAttribute(
+      'content',
+      /^Search for Pokémon and build your list of up to 6 to catch/,
+    )
 
     await expect(page.locator('html')).toHaveAttribute('lang', 'en')
     await expect(page).toHaveTitle('Pokémon to catch')
