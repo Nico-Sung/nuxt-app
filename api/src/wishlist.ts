@@ -31,16 +31,26 @@ export function parsePokemonInput(body: unknown): Pokemon | null {
   return { id, name: name.trim(), sprite }
 }
 
+/** Stockage de la liste : en mémoire (dev, tests) ou Postgres (Supabase). */
+export interface WishlistStore {
+  /** Entrées dans l'ordre d'ajout. */
+  list(): Promise<WishlistItem[]>
+  /** Doublon prioritaire sur liste pleine. */
+  add(pokemon: Pokemon): Promise<AddResult>
+  /** Retire le Pokémon ; renvoie l'entrée retirée, ou null s'il était absent. */
+  remove(pokemonId: number): Promise<WishlistItem | null>
+}
+
 /** Liste de Pokémon à capturer, stockée en mémoire (perdue au redémarrage). */
-export class WishlistStore {
+export class MemoryWishlistStore implements WishlistStore {
   readonly #items: WishlistItem[] = []
 
   /** Copie de la liste : l'appelant ne peut pas modifier le stockage. */
-  list(): WishlistItem[] {
+  async list(): Promise<WishlistItem[]> {
     return [...this.#items]
   }
 
-  add(pokemon: Pokemon, now: Date = new Date()): AddResult {
+  async add(pokemon: Pokemon, now: Date = new Date()): Promise<AddResult> {
     if (this.#items.some((item) => item.pokemon.id === pokemon.id)) {
       return { status: 'duplicate' }
     }
@@ -52,8 +62,7 @@ export class WishlistStore {
     return { status: 'added', item }
   }
 
-  /** Retire le Pokémon ; renvoie l'entrée retirée, ou null s'il était absent. */
-  remove(pokemonId: number): WishlistItem | null {
+  async remove(pokemonId: number): Promise<WishlistItem | null> {
     const index = this.#items.findIndex((item) => item.pokemon.id === pokemonId)
     if (index === -1) return null
     const [removed] = this.#items.splice(index, 1)

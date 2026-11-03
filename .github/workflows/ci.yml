@@ -154,9 +154,38 @@ jobs:
       - uses: ./.github/actions/setup-api
       - run: npm test
 
+  # Routes de l'API sur un vrai Postgres (schéma supabase/init.sql), sans mock SQL
+  api-test-db:
+    name: API · Tests BDD (Postgres)
+    needs: api-install
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: api
+    services:
+      postgres:
+        image: postgres:17-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: wishlist_test
+        ports:
+          - 54329:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d wishlist_test"
+          --health-interval 2s
+          --health-timeout 3s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup-api
+      - run: npm run test:db
+        env:
+          TEST_DATABASE_URL: postgres://postgres:postgres@localhost:54329/wishlist_test
+
   api-health:
     name: API · Build + /health
-    needs: [api-format, api-lint, api-typecheck, api-test]
+    needs: [api-format, api-lint, api-typecheck, api-test, api-test-db]
     runs-on: ubuntu-latest
     defaults:
       run:

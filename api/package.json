@@ -11,11 +11,15 @@
     "test": "vitest run",
     "lint": "eslint .",
     "format": "prettier --write .",
-    "format:check": "prettier --check ."
+    "format:check": "prettier --check .",
+    "test:db": "vitest run --config vitest.db.config.ts",
+    "db:test:up": "docker compose -f compose.test.yml up -d --wait",
+    "db:test:down": "docker compose -f compose.test.yml down"
   },
   "dependencies": {
     "@hono/node-server": "^2.1.6",
-    "hono": "^4.13.16"
+    "hono": "^4.13.16",
+    "postgres": "^4.0.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

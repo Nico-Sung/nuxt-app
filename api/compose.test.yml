@@ -1,0 +1,21 @@
+# Base Postgres jetable pour les tests d'intégration (npm run test:db).
+# Données en mémoire (tmpfs) : tout disparaît avec `npm run db:test:down`.
+name: pokemon-api-test
+
+services:
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: wishlist_test
+    ports:
+      # 54329 : évite le 5432 d'un Postgres déjà installé
+      - '127.0.0.1:54329:5432'
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U postgres -d wishlist_test']
+      interval: 1s
+      timeout: 3s
+      retries: 30

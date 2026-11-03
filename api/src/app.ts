@@ -1,10 +1,12 @@
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import { shortSha, VERSION } from './version.js'
+import { connect, PostgresWishlistStore } from './postgresStore.js'
 import {
   MAX_WISHLIST_SIZE,
+  MemoryWishlistStore,
   parsePokemonInput,
-  WishlistStore,
+  type WishlistStore,
 } from './wishlist.js'
 
 export interface HealthResponse {
@@ -21,6 +23,7 @@ export type ErrorCode =
   | 'invalid_id'
   | 'not_found'
   | 'route_not_found'
+  | 'internal_error'
 
 export interface ErrorResponse {
   error: string
@@ -32,7 +35,7 @@ export const DEFAULT_CORS_ORIGIN = 'http://localhost:3000'
 export interface AppOptions {
   version: string
   commit: string
-  /** Stockage de la liste ; un store neuf par défaut (utile pour isoler les tests). */
+  /** Stockage de la liste ; une liste en mémoire neuve par défaut (isole les tests). */
   store?: WishlistStore
   /** Origine autorisée à appeler l'API depuis un navigateur (le front Nuxt). */
   corsOrigin?: string
@@ -51,7 +54,7 @@ const error = (code: ErrorCode, message: string): ErrorResponse => ({
 export function createApp({
   version,
   commit,
-  store = new WishlistStore(),
+  store = new MemoryWishlistStore(),
   corsOrigin = DEFAULT_CORS_ORIGIN,
 }: AppOptions) {
   const app = new Hono()
@@ -69,7 +72,7 @@ export function createApp({
     c.json<HealthResponse>({ status: 'ok', version, commit }),
   )
 
-  app.get('/wishlist', (c) => c.json(store.list(), 200))
+  app.get('/wishlist', async (c) => c.json(await store.list(), 200))
 
   app.post('/wishlist', async (c) => {
     let body: unknown
@@ -84,7 +87,7 @@ export function createApp({
       return c.json(error('invalid_body', 'Corps invalide'), 400)
     }
 
-    const result = store.add(pokemon)
+    const result = await store.add(pokemon)
     switch (result.status) {
       case 'duplicate':
         return c.json(error('duplicate', 'Pokémon déjà dans la liste'), 409)
@@ -99,13 +102,13 @@ export function createApp({
     }
   })
 
-  app.delete('/wishlist/:id', (c) => {
+  app.delete('/wishlist/:id', async (c) => {
     const id = parseId(c.req.param('id'))
     if (id === null) {
       return c.json(error('invalid_id', 'Id invalide'), 400)
     }
 
-    const removed = store.remove(id)
+    const removed = await store.remove(id)
     if (!removed) {
       return c.json(error('not_found', 'Pokémon absent de la liste'), 404)
     }
@@ -114,12 +117,28 @@ export function createApp({
 
   app.notFound((c) => c.json(error('route_not_found', 'Not Found'), 404))
 
+  // Base injoignable, erreur SQL inattendue… : 500 en JSON, détail dans les logs.
+  app.onError((err, c) => {
+    console.error(err)
+    return c.json(error('internal_error', 'Erreur interne'), 500)
+  })
+
   return app
 }
 
-/** App configurée à partir de package.json et des variables GIT_SHA, CORS_ORIGIN. */
+/** Postgres si DATABASE_URL est défini (ex. Supabase), sinon en mémoire. */
+export function storeFromEnv(
+  databaseUrl = process.env.DATABASE_URL,
+): WishlistStore {
+  return databaseUrl
+    ? new PostgresWishlistStore(connect(databaseUrl))
+    : new MemoryWishlistStore()
+}
+
+/** App configurée à partir de package.json et des variables GIT_SHA, CORS_ORIGIN, DATABASE_URL. */
 export const app = createApp({
   version: VERSION,
   commit: shortSha(process.env.GIT_SHA),
   corsOrigin: process.env.CORS_ORIGIN || DEFAULT_CORS_ORIGIN,
+  store: storeFromEnv(),
 })
