@@ -35,7 +35,13 @@ export default defineConfig({
       name: 'API Hono',
       command: 'npm --prefix api run build && npm --prefix api start',
       url: `${API_URL}/health`,
-      env: { PORT: String(API_PORT), CORS_ORIGIN: NUXT_URL },
+      env: {
+        PORT: String(API_PORT),
+        CORS_ORIGIN: NUXT_URL,
+        // Toujours en mémoire : les tests vident la liste à chaque fois,
+        // ils ne doivent jamais toucher une vraie base (Supabase).
+        DATABASE_URL: '',
+      },
       reuseExistingServer: false,
       timeout: 60_000,
     },

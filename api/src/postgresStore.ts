@@ -78,11 +78,20 @@ export class PostgresWishlistStore implements WishlistStore {
   }
 }
 
+const LOCAL_HOSTS = new Set(['localhost', '127.0.0.1', '[::1]'])
+
+/** Hôte de la base, pour les logs (jamais l'URL complète : elle contient le mot de passe). */
+export function databaseHost(url: string): string {
+  return new URL(url).hostname
+}
+
 /** Connexion à partir d'une URL (Supabase, ou la base de test locale). */
 export function connect(url: string): postgres.Sql {
   return postgres(url, {
     // Compatible avec le pooler Supabase en mode transaction.
     prepare: false,
+    // Chiffrement obligatoire hors de la machine (Supabase) ; pas en local (Docker).
+    ssl: LOCAL_HOSTS.has(databaseHost(url)) ? false : 'require',
     onnotice: () => {},
   })
 }
