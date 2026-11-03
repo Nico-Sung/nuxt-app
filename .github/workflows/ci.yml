@@ -168,7 +168,7 @@ jobs:
       - uses: ./.github/actions/setup-api
       - run: npm test
 
-  # Routes de l'API sur un vrai Postgres (schéma supabase/init.sql), sans mock SQL
+  # Routes de l'API sur un vrai Postgres (schéma = supabase/migrations, appliquées par le runner), sans mock SQL
   api-test-db:
     name: API · Tests BDD (Postgres)
     needs: api-install

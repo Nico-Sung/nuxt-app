@@ -1,4 +1,4 @@
--- Vérifie supabase/init.sql.
+-- Vérifie le schéma créé par supabase/migrations/000_init.sql.
 --
 -- SQL Editor → New query → coller ce fichier → Run.
 -- Résultat attendu : un tableau dont toutes les lignes sont à ✅.
@@ -29,7 +29,7 @@ begin
   where n.nspname = 'public' and c.relname = 'wishlist' and c.relkind = 'r';
 
   if rls is null then
-    raise exception 'La table public.wishlist n''existe pas : exécute d''abord init.sql';
+    raise exception 'La table public.wishlist n''existe pas : applique d''abord les migrations (npm --prefix api run migrate)';
   end if;
 
   select string_agg(column_name || ' ' || data_type, ', ' order by ordinal_position)

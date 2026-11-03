@@ -19,7 +19,7 @@ export default tseslint.config(
   },
   {
     // Point d'entrée du serveur : le message de démarrage est voulu.
-    files: ['src/index.ts'],
+    files: ['src/index.ts', 'src/migrate.ts'],
     rules: { 'no-console': 'off' },
   },
 )

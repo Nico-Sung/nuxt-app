@@ -1,5 +1,5 @@
-import { readFile } from 'node:fs/promises'
 import postgres from 'postgres'
+import { migrate } from '../../src/migrations.js'
 import { connect } from '../../src/postgresStore.js'
 
 export const DEFAULT_TEST_DATABASE_URL =
@@ -29,11 +29,17 @@ export function connectTestDatabase(): postgres.Sql {
   return connect(testDatabaseUrl())
 }
 
-const INIT_SQL = new URL('../../../supabase/init.sql', import.meta.url)
-
-/** Applique le vrai schéma Supabase (supabase/init.sql) à la base de test. */
+/**
+ * Schéma de la base de test : les vraies migrations (supabase/migrations),
+ * appliquées par le runner, comme sur Supabase.
+ */
 export async function applySchema(sql: postgres.Sql): Promise<void> {
-  // Rôles fournis par Supabase, absents d'un Postgres standard.
+  await createSupabaseRoles(sql)
+  await migrate(sql)
+}
+
+/** Rôles fournis par Supabase, absents d'un Postgres standard. */
+export async function createSupabaseRoles(sql: postgres.Sql): Promise<void> {
   await sql
     .unsafe(
       `
@@ -50,7 +56,6 @@ export async function applySchema(sql: postgres.Sql): Promise<void> {
   `,
     )
     .simple()
-  await sql.unsafe(await readFile(INIT_SQL, 'utf8')).simple()
 }
 
 /** Vide la liste : chaque test part d'une table vide. */

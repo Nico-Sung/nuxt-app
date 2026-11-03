@@ -6,7 +6,7 @@ import type {
   WishlistStore,
 } from './wishlist.js'
 
-/** Codes d'erreur Postgres levés par le schéma (supabase/init.sql). */
+/** Codes d'erreur Postgres levés par le schéma (supabase/migrations/000_init.sql). */
 const UNIQUE_VIOLATION = '23505'
 const CHECK_VIOLATION = '23514'
 

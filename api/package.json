@@ -15,7 +15,8 @@
     "test:db": "vitest run --config vitest.db.config.ts",
     "db:test:up": "docker compose -f compose.test.yml up -d --wait",
     "db:test:down": "docker compose -f compose.test.yml down",
-    "build:lambda": "node scripts/build-lambda.mjs"
+    "build:lambda": "node scripts/build-lambda.mjs",
+    "migrate": "tsx --env-file-if-exists=.env src/migrate.ts"
   },
   "dependencies": {
     "@aws-sdk/client-ssm": "^3.1161.0",

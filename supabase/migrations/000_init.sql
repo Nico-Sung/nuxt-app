@@ -1,7 +1,8 @@
--- Schéma de la liste de Pokémon à capturer.
+-- Migration 000 : schéma de la liste de Pokémon à capturer.
 --
--- À exécuter dans Supabase : SQL Editor → New query → coller ce fichier → Run.
--- Rejouable : l'exécuter plusieurs fois ne casse rien et ne duplique rien.
+-- Appliquée par le runner (npm --prefix api run migrate), une seule fois,
+-- et notée dans schema_migrations. Rejouable sans risque : c'était le
+-- init.sql exécuté à la main dans Supabase avant l'arrivée des migrations.
 -- Vérification : supabase/verify.sql.
 
 -- ---------------------------------------------------------------------------

@@ -10,7 +10,7 @@ import {
 import { connectTestDatabase, resetWishlist } from './database.js'
 
 /**
- * Routes de l'API sur une vraie base Postgres (schéma supabase/init.sql).
+ * Routes de l'API sur une vraie base Postgres (schéma : supabase/migrations).
  * Aucun mock : chaque requête HTTP passe par le driver jusqu'à la base,
  * et on relit la table en SQL pour vérifier ce qui a vraiment été écrit.
  */
