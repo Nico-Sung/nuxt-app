@@ -33,8 +33,13 @@ import {
 import type { Construct } from 'constructs'
 
 export interface StaticStackProps extends StackProps {
-  /** Dépôt GitHub autorisé à déployer : "Nico-Sung/nuxt-app". */
-  githubRepository: string
+  /**
+   * Sujet OIDC du dépôt autorisé, au format « immuable » de GitHub
+   * (identifiants numériques : un dépôt recréé avec le même nom n'y a pas
+   * accès) : "repo:Nico-Sung@124790604/nuxt-app@1442789697".
+   * Voir : gh api repos/<owner>/<repo>/actions/oidc/customization/sub
+   */
+  githubSubjectPrefix: string
   /** Environnement GitHub du job de déploiement (le seul autorisé). */
   githubEnvironment: string
 }
@@ -109,7 +114,7 @@ export class StaticStack extends Stack {
         StringEquals: {
           'token.actions.githubusercontent.com:aud': 'sts.amazonaws.com',
           // uniquement ce dépôt, et uniquement le job de l'environnement de déploiement
-          'token.actions.githubusercontent.com:sub': `repo:${props.githubRepository}:environment:${props.githubEnvironment}`,
+          'token.actions.githubusercontent.com:sub': `${props.githubSubjectPrefix}:environment:${props.githubEnvironment}`,
         },
       }),
     })

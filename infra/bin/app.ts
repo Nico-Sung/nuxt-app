@@ -47,7 +47,8 @@ new StaticStack(app, 'PokemonStatic', {
     region: 'eu-west-1',
     account: process.env.CDK_DEFAULT_ACCOUNT,
   },
-  githubRepository: 'Nico-Sung/nuxt-app',
+  // Format immuable du sujet OIDC (compte 124790604, dépôt 1442789697).
+  githubSubjectPrefix: 'repo:Nico-Sung@124790604/nuxt-app@1442789697',
   githubEnvironment: 'static',
   tags: { project: 'pokemon-wishlist' },
 })
