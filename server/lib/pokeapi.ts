@@ -7,8 +7,8 @@ import type {
   PokemonDetails,
   PokemonProfile,
 } from '#shared/types/pokemon'
+import type { AppLanguage } from '#shared/utils/language'
 import {
-  type AppLanguage,
   idFromUrl,
   toPokemon,
   toPokemonDetails,

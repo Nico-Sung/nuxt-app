@@ -15,11 +15,14 @@ export const MIN_QUERY_LENGTH = 2
 /**
  * Recherche par nom (partielle) ou par numéro (exact).
  * Les noms qui commencent par la recherche passent en premier.
+ * `namesOf` donne les noms à comparer (par défaut le nom anglais ; le serveur
+ * ajoute les noms traduits pour chercher « bulbi » comme « bulba »).
  */
 export function searchPokemon(
   list: readonly Pokemon[],
   query: string,
   limit = 20,
+  namesOf: (pokemon: Pokemon) => readonly string[] = (p) => [p.name],
 ): Pokemon[] {
   const q = normalizeText(query).replace(/^#\s*/, '') // "#025" -> "025"
   if (!q) return []
@@ -34,9 +37,9 @@ export function searchPokemon(
   const startsWith: Pokemon[] = []
   const contains: Pokemon[] = []
   for (const p of list) {
-    const name = normalizeText(p.name)
-    if (name.startsWith(q)) startsWith.push(p)
-    else if (name.includes(q)) contains.push(p)
+    const names = namesOf(p).map(normalizeText)
+    if (names.some((name) => name.startsWith(q))) startsWith.push(p)
+    else if (names.some((name) => name.includes(q))) contains.push(p)
   }
   return [...startsWith, ...contains].slice(0, limit)
 }

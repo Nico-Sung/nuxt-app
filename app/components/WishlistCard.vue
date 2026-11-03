@@ -2,6 +2,7 @@
 import type { PokemonDetails } from '#shared/types/pokemon'
 import type { WishlistItem } from '#shared/types/wishlist'
 import { formatNumber } from '#shared/utils/format'
+import { pokemonName } from '#shared/utils/names'
 import { pokemonSlug, smallSpriteUrl } from '#shared/utils/pokeapi'
 import { typeColor } from '#shared/utils/types'
 
@@ -13,8 +14,12 @@ defineEmits<{
   remove: [pokemonId: number]
 }>()
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
 const pokemon = computed(() => props.item.pokemon)
+/** Nom affiché dans la langue choisie ; l'API garde le nom anglais. */
+const name = computed(() =>
+  pokemonName(pokemon.value.id, locale.value, pokemon.value.name),
+)
 
 const {
   data: details,
@@ -49,7 +54,7 @@ function onImageError() {
       <img
         v-if="imageState !== 'missing'"
         :src="imageSrc"
-        :alt="pokemon.name"
+        :alt="name"
         width="160"
         height="160"
         loading="lazy"
@@ -60,7 +65,7 @@ function onImageError() {
     <div class="body">
       <span class="num">{{ formatNumber(pokemon.id) }}</span>
       <h3 class="name">
-        <NuxtLink :to="profileUrl">{{ pokemon.name }}</NuxtLink>
+        <NuxtLink :to="profileUrl">{{ name }}</NuxtLink>
       </h3>
 
       <TypeBadges v-if="details" class="card-types" :types="details.types" />
@@ -81,7 +86,7 @@ function onImageError() {
       <button
         type="button"
         class="remove"
-        :aria-label="t('card.removeLabel', { name: pokemon.name })"
+        :aria-label="t('card.removeLabel', { name })"
         @click="$emit('remove', pokemon.id)"
       >
         {{ t('card.remove') }}

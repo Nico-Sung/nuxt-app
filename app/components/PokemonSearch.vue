@@ -2,9 +2,14 @@
 import type { Pokemon } from '#shared/types/pokemon'
 import { smallSpriteUrl } from '#shared/utils/pokeapi'
 import { formatNumber } from '#shared/utils/format'
+import { pokemonName } from '#shared/utils/names'
 import { MIN_QUERY_LENGTH } from '#shared/utils/search'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
+
+/** Nom affiché dans la langue choisie (« Bulbizarre » / « Bulbasaur »). */
+const displayName = (pokemon: Pokemon) =>
+  pokemonName(pokemon.id, locale.value, pokemon.name)
 
 const props = defineProps<{
   isInList: (id: number) => boolean
@@ -188,7 +193,7 @@ function onKeydown(event: KeyboardEvent) {
           loading="lazy"
         />
         <span class="num">{{ formatNumber(pokemon.id) }}</span>
-        <span class="name">{{ pokemon.name }}</span>
+        <span class="name">{{ displayName(pokemon) }}</span>
         <span class="action" :class="{ taken: !canAdd(pokemon.id) }">
           {{ actionLabel(pokemon.id) }}
         </span>

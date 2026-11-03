@@ -15,7 +15,8 @@
     "format:check": "prettier --check .",
     "dev:api": "npm --prefix api run dev",
     "test:e2e": "playwright test",
-    "i18n:check": "node scripts/check-locales.mjs i18n/locales api/locales"
+    "i18n:check": "node scripts/check-locales.mjs i18n/locales api/locales",
+    "pokemon-names": "node scripts/generate-pokemon-names.mjs"
   },
   "dependencies": {
     "nuxt": "^4.6.3",

@@ -5,13 +5,13 @@ import type {
 } from '../shared/types/pokemon'
 import {
   cleanFlavorText,
-  isAppLanguage,
   isPokemonSlug,
   profileLanguages,
   pickLocalized,
   pokemonSlug,
   toPokemonProfile,
 } from '../shared/utils/pokeapi'
+import { isAppLanguage } from '../shared/utils/language'
 import {
   formatHeight,
   formatNumber,
@@ -118,8 +118,8 @@ describe('toPokemonProfile', () => {
       height: 4,
       weight: 60,
       abilities: [
-        { name: 'Static', hidden: false },
-        { name: 'Lightning Rod', hidden: true },
+        { name: 'Statik', hidden: false },
+        { name: 'Paratonnerre', hidden: true },
       ],
     })
   })
@@ -159,6 +159,35 @@ describe('toPokemonProfile : langue demandée', () => {
     const profile = toPokemonProfile(PIKACHU, PIKACHU_SPECIES, 'en')
     expect(profile.genus).toBe('Mouse Pokémon')
     expect(profile.description).toBe('Latest english text.')
+  })
+
+  it('en : nom et talents en anglais', () => {
+    const profile = toPokemonProfile(PIKACHU, PIKACHU_SPECIES, 'en')
+    expect(profile.name).toBe('Pikachu')
+    expect(profile.abilities.map((a) => a.name)).toEqual([
+      'Static',
+      'Lightning Rod',
+    ])
+  })
+
+  it('nom traduit selon la langue (Bulbizarre / Bulbasaur)', () => {
+    const bulbasaur = { ...PIKACHU, id: 1, name: 'bulbasaur' }
+    expect(toPokemonProfile(bulbasaur, null, 'fr').name).toBe('Bulbizarre')
+    expect(toPokemonProfile(bulbasaur, null, 'en').name).toBe('Bulbasaur')
+  })
+
+  it('forme sans nom traduit et talent inconnu : nom PokéAPI formaté', () => {
+    const form = {
+      ...PIKACHU,
+      id: 10080,
+      name: 'pikachu-rock-star',
+      abilities: [
+        { ability: { name: 'talent-futur' }, is_hidden: false, slot: 1 },
+      ],
+    }
+    const profile = toPokemonProfile(form, null, 'fr')
+    expect(profile.name).toBe('Pikachu Rock Star')
+    expect(profile.abilities).toEqual([{ name: 'Talent Futur', hidden: false }])
   })
 
   it('fr par défaut', () => {

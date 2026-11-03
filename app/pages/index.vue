@@ -1,7 +1,12 @@
 <script setup lang="ts">
 import type { Pokemon } from '#shared/types/pokemon'
+import { pokemonName } from '#shared/utils/names'
 
-const { t } = useI18n()
+const { t, locale } = useI18n()
+
+/** Nom affiché dans la langue choisie (l'API stocke le nom anglais). */
+const nameOf = (pokemon: Pokemon) =>
+  pokemonName(pokemon.id, locale.value, pokemon.name)
 const { items, status, loaded, isFull, has, reload, add, remove, clear } =
   useWishlist()
 
@@ -24,8 +29,11 @@ async function onAdd(pokemon: Pokemon) {
     const result = await add(pokemon)
     if (result === 'added') {
       announcement.value = isFull.value
-        ? t('home.addedFull', { name: pokemon.name, full: fullMessage.value })
-        : t('home.added', { name: pokemon.name })
+        ? t('home.addedFull', {
+            name: nameOf(pokemon),
+            full: fullMessage.value,
+          })
+        : t('home.added', { name: nameOf(pokemon) })
     } else {
       // La liste a changé côté API (autre onglet, curl…) : on resynchronise.
       await reload()
@@ -33,12 +41,12 @@ async function onAdd(pokemon: Pokemon) {
         // le message « Liste pleine » permanent s'affiche déjà (isFull)
         announcement.value = fullMessage.value
       } else {
-        errorMessage.value = t('home.duplicate', { name: pokemon.name })
+        errorMessage.value = t('home.duplicate', { name: nameOf(pokemon) })
       }
     }
   } catch {
     errorMessage.value = t('home.addFailed', {
-      name: pokemon.name,
+      name: nameOf(pokemon),
       reason: apiDown(),
     })
   } finally {
@@ -52,11 +60,11 @@ async function onRemove(pokemonId: number) {
   try {
     await remove(pokemonId)
     if (item) {
-      announcement.value = t('home.removed', { name: item.pokemon.name })
+      announcement.value = t('home.removed', { name: nameOf(item.pokemon) })
     }
   } catch {
     errorMessage.value = t('home.removeFailed', {
-      name: item?.pokemon.name ?? t('home.thisPokemon'),
+      name: item ? nameOf(item.pokemon) : t('home.thisPokemon'),
       reason: apiDown(),
     })
   }

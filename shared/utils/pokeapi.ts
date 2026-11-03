@@ -10,6 +10,8 @@ import type {
   StatName,
 } from '../types/pokemon'
 import { STAT_NAMES } from '../types/pokemon'
+import type { AppLanguage } from './language'
+import { abilityName, pokemonName } from './names'
 import { isPokemonTypeName } from './types'
 
 const SPRITES_BASE =
@@ -80,14 +82,6 @@ export function pokemonSlug(name: string): string {
   return name.trim().toLowerCase().replace(/\s+/g, '-')
 }
 
-/** Langues de l'app ; l'anglais sert de repli pour les textes PokéAPI. */
-export const APP_LANGUAGES = ['fr', 'en'] as const
-export type AppLanguage = (typeof APP_LANGUAGES)[number]
-
-export function isAppLanguage(value: unknown): value is AppLanguage {
-  return (APP_LANGUAGES as readonly unknown[]).includes(value)
-}
-
 /** Langues des textes de la fiche, par ordre de préférence : demandée, puis anglais. */
 export function profileLanguages(lang: AppLanguage): string[] {
   return lang === 'en' ? ['en'] : [lang, 'en']
@@ -121,7 +115,7 @@ export function cleanFlavorText(text: string): string {
 
 /**
  * Transforme GET /pokemon/{name} (+ GET /pokemon-species/{id}) en fiche.
- * Catégorie et description dans la langue demandée, sinon en anglais ;
+ * Nom, talents, catégorie et description dans la langue demandée, sinon en anglais ;
  * sans espèce (indisponible), la fiche n'a ni l'une ni l'autre.
  */
 export function toPokemonProfile(
@@ -137,12 +131,15 @@ export function toPokemonProfile(
   return {
     ...toPokemonDetails(data),
     slug: data.name,
-    name: formatName(data.name),
+    name: pokemonName(data.id, lang, formatName(data.name)),
     sprite: spriteUrl(data.id),
     genus: genus ? genus.genus : null,
     description: flavor ? cleanFlavorText(flavor.flavor_text) : null,
     abilities: [...data.abilities]
       .sort((a, b) => a.slot - b.slot)
-      .map((a) => ({ name: formatName(a.ability.name), hidden: a.is_hidden })),
+      .map((a) => ({
+        name: abilityName(a.ability.name, lang, formatName(a.ability.name)),
+        hidden: a.is_hidden,
+      })),
   }
 }

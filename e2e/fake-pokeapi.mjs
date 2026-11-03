@@ -2,6 +2,7 @@
 // pokeapi.co (NUXT_POKEAPI_BASE), pour des tests sans réseau et stables.
 //
 //   GET /health                       -> 200
+//   GET /api/v2/pokemon?limit=…       -> liste (index de la recherche)
 //   GET /api/v2/pokemon/{nom|id}      -> fixtures/pokemon-{nom}.json
 //   GET /api/v2/pokemon-species/{id}  -> fixtures/species-{id}.json
 //   GET /api/v2/pokemon/erreur-serveur -> 500 (simule une panne)
@@ -19,6 +20,16 @@ const POKEMON = new Map([
 ])
 const SPECIES = new Map([['25', fixture('species-25')]])
 
+/** Index de la recherche : ce que renvoie GET /pokemon?limit=100000. */
+const INDEX = [
+  [1, 'bulbasaur'],
+  [25, 'pikachu'],
+  [133, 'eevee'],
+].map(([id, name]) => ({
+  name,
+  url: `https://pokeapi.co/api/v2/pokemon/${id}/`,
+}))
+
 const port = Number(process.env.PORT) || 3202
 
 const send = (res, status, body) => {
@@ -31,6 +42,9 @@ createServer((req, res) => {
   const [, api, version, resource, key] = pathname.split('/')
 
   if (pathname === '/health') return send(res, 200, { status: 'ok' })
+  if (api === 'api' && version === 'v2' && resource === 'pokemon' && !key) {
+    return send(res, 200, { count: INDEX.length, results: INDEX })
+  }
   if (api !== 'api' || version !== 'v2' || !key) {
     return send(res, 404, 'Not Found')
   }

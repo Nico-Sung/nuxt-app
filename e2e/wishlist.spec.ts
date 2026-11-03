@@ -17,26 +17,40 @@ interface Pokemon {
   sprite: string
 }
 
+/** Pokémon du catalogue + son nom affiché en français (l'API garde l'anglais). */
+interface CatalogPokemon extends Pokemon {
+  fr: string
+}
+
 const SPRITE = (id: number) =>
   `https://raw.githubusercontent.com/PokeAPI/sprites/master/sprites/pokemon/other/official-artwork/${id}.png`
 
-const poke = (id: number, name: string): Pokemon => ({
+const poke = (id: number, name: string, fr = name): CatalogPokemon => ({
   id,
   name,
   sprite: SPRITE(id),
+  fr,
+})
+
+/** Ce que l'API stocke (sans le nom affiché). */
+const stored = ({ id, name, sprite }: Pokemon): Pokemon => ({
+  id,
+  name,
+  sprite,
 })
 
 const PIKACHU = poke(25, 'Pikachu')
-const EEVEE = poke(133, 'Eevee')
+const EEVEE = poke(133, 'Eevee', 'Évoli')
+const SNORLAX = poke(143, 'Snorlax', 'Ronflex')
 /** 8 Pokémon : de quoi remplir la liste (6) et en refuser un 7ᵉ. */
-const CATALOG: Pokemon[] = [
-  poke(1, 'Bulbasaur'),
-  poke(4, 'Charmander'),
-  poke(7, 'Squirtle'),
+const CATALOG: CatalogPokemon[] = [
+  poke(1, 'Bulbasaur', 'Bulbizarre'),
+  poke(4, 'Charmander', 'Salamèche'),
+  poke(7, 'Squirtle', 'Carapuce'),
   PIKACHU,
-  poke(39, 'Jigglypuff'),
+  poke(39, 'Jigglypuff', 'Rondoudou'),
   EEVEE,
-  poke(143, 'Snorlax'),
+  SNORLAX,
   poke(151, 'Mew'),
 ]
 
@@ -55,7 +69,9 @@ async function mockPokeApi(page: Page) {
     if (url.pathname === '/api/pokemon/search') {
       const q = (url.searchParams.get('q') ?? '').toLowerCase()
       return route.fulfill({
-        json: CATALOG.filter((p) => p.name.toLowerCase().includes(q)),
+        json: CATALOG.filter((p) => p.name.toLowerCase().includes(q)).map(
+          stored,
+        ),
       })
     }
     const id = Number(url.pathname.split('/').pop())
@@ -91,7 +107,9 @@ const apiNames = async (request: APIRequestContext) =>
   (await apiList(request)).map((p) => p.name)
 
 async function apiAdd(request: APIRequestContext, pokemon: Pokemon) {
-  const res = await request.post(`${API_URL}/wishlist`, { data: pokemon })
+  const res = await request.post(`${API_URL}/wishlist`, {
+    data: stored(pokemon),
+  })
   expect(res.status()).toBe(201)
 }
 
@@ -124,8 +142,9 @@ const counter = (page: Page) => page.locator('header .total')
 const cardTitles = (page: Page) => page.locator('article h3')
 const searchBox = (page: Page) =>
   page.getByRole('combobox', { name: 'Rechercher un Pokémon' })
+/** Résultat de recherche par nom affiché (« Évoli » : pas de \b avant un É). */
 const result = (page: Page, name: string) =>
-  page.getByRole('option', { name: new RegExp(`\\b${name}\\b`) })
+  page.getByRole('option', { name: new RegExp(`(^|\\s)${name}(\\s|$)`) })
 const FULL_NOTICE = /Liste pleine \(6 Pokémon max\)/
 /** Message visible « Liste pleine » (pas la zone lue par les lecteurs d'écran). */
 const fullNotice = (page: Page) =>
@@ -141,13 +160,13 @@ async function search(page: Page, query: string) {
   await searchBox(page).fill(query)
 }
 
-/** Ajoute via l'UI et attend la réponse de l'API (201). */
-async function addViaUi(page: Page, pokemon: Pokemon) {
+/** Ajoute via l'UI (recherche par nom anglais, clic sur le nom affiché) ; attend le 201. */
+async function addViaUi(page: Page, pokemon: CatalogPokemon) {
   await search(page, pokemon.name)
   const posted = page.waitForResponse(
     (r) => r.url() === `${API_URL}/wishlist` && r.request().method() === 'POST',
   )
-  await result(page, pokemon.name).click()
+  await result(page, pokemon.fr).click()
   expect((await posted).status()).toBe(201)
 }
 
@@ -227,7 +246,7 @@ test.describe('parcours wishlist Nuxt + API Hono', () => {
     await expect(fullNotice(page)).toBeVisible()
 
     await search(page, 'Snorlax')
-    const option = result(page, 'Snorlax')
+    const option = result(page, SNORLAX.fr)
     await expect(option).toContainText('Liste pleine')
     await expect(option).toHaveAttribute('aria-disabled', 'true')
     // clic forcé : Playwright refuse sinon de cliquer un élément désactivé
@@ -253,7 +272,7 @@ test.describe('parcours wishlist Nuxt + API Hono', () => {
       (r) =>
         r.url() === `${API_URL}/wishlist` && r.request().method() === 'POST',
     )
-    await result(page, 'Snorlax').click()
+    await result(page, SNORLAX.fr).click()
     expect((await posted).status()).toBe(409)
 
     await expect(counter(page)).toHaveText('6 / 6')
@@ -273,7 +292,7 @@ test.describe('parcours wishlist Nuxt + API Hono', () => {
 
     await page.getByRole('button', { name: 'Retirer Pikachu' }).click()
 
-    await expect(cardTitles(page)).toHaveText(['Eevee'])
+    await expect(cardTitles(page)).toHaveText([EEVEE.fr])
     await expect(counter(page)).toHaveText('1 / 6')
     await expect.poll(() => apiNames(request)).toEqual(['Eevee'])
   })

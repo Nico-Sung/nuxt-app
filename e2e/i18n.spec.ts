@@ -124,6 +124,69 @@ test.describe('sélecteur de langue', () => {
   })
 })
 
+test.describe('noms des Pokémon traduits', () => {
+  const searchBox = (page: Page) => page.getByRole('combobox')
+  const option = (page: Page, name: string) =>
+    page.getByRole('option', { name: new RegExp(`(^|\\s)${name}(\\s|$)`) })
+
+  test('recherche en français ou en anglais, résultat dans la langue choisie', async ({
+    page,
+  }) => {
+    await page.goto('/')
+    await expect(page.locator('header .total')).toBeVisible()
+
+    // nom français (avec ou sans accent) et nom anglais trouvent le même Pokémon
+    for (const query of ['bulbi', 'bulba']) {
+      await searchBox(page).fill(query)
+      await expect(option(page, 'Bulbizarre')).toBeVisible()
+    }
+    await searchBox(page).fill('evoli')
+    await expect(option(page, 'Évoli')).toBeVisible()
+
+    await languageButton(page, 'English').click()
+    await searchBox(page).fill('bulbi')
+    await expect(option(page, 'Bulbasaur')).toBeVisible()
+  })
+
+  test('ajout depuis la recherche : nom traduit à l’écran, nom anglais dans l’API', async ({
+    page,
+  }) => {
+    await page.goto('/')
+    await expect(page.locator('header .total')).toHaveText('0 / 6')
+
+    await searchBox(page).fill('evoli')
+    const posted = page.waitForResponse(
+      (r) =>
+        r.url() === `${API_URL}/wishlist` && r.request().method() === 'POST',
+    )
+    await option(page, 'Évoli').click()
+    expect((await posted).status()).toBe(201)
+
+    await expect(page.locator('article h3')).toHaveText(['Évoli'])
+    await expect(
+      page.getByRole('button', { name: 'Retirer Évoli' }),
+    ).toBeVisible()
+    const stored = (await (
+      await page.request.get(`${API_URL}/wishlist`)
+    ).json()) as {
+      pokemon: { name: string }
+    }[]
+    expect(stored.map((i) => i.pokemon.name)).toEqual(['Eevee'])
+
+    await languageButton(page, 'English').click()
+    await expect(page.locator('article h3')).toHaveText(['Eevee'])
+  })
+
+  test('fiche : nom et talents traduits', async ({ page }) => {
+    await page.goto('/pokemon/pikachu')
+    const abilities = page.locator('.abilities li')
+    await expect(abilities).toHaveText(['Statik', 'Paratonnerre (caché)'])
+
+    await languageButton(page, 'English').click()
+    await expect(abilities).toHaveText(['Static', 'Lightning Rod (hidden)'])
+  })
+})
+
 test.describe('langue du navigateur (sans cookie)', () => {
   test.describe('navigateur en anglais', () => {
     test.use({ locale: 'en-US' })

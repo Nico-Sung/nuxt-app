@@ -1,5 +1,6 @@
 import type { PokemonProfile } from '#shared/types/pokemon'
-import { isAppLanguage, isPokemonSlug } from '#shared/utils/pokeapi'
+import { isAppLanguage } from '#shared/utils/language'
+import { isPokemonSlug } from '#shared/utils/pokeapi'
 import { toHttpError } from '../../../lib/pokeapi'
 
 /** Fiche d'un Pokémon par son nom (« pikachu ») ; ?lang=fr|en (défaut : fr). */

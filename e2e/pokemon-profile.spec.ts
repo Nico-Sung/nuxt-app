@@ -43,8 +43,8 @@ async function expectPikachuProfile(page: Page) {
   await expect(facts).toContainText('Taille0,4 m')
   await expect(facts).toContainText('Poids6 kg')
   await expect(facts.locator('.abilities li')).toHaveText([
-    'Static',
-    'Lightning Rod (caché)',
+    'Statik',
+    'Paratonnerre (caché)',
   ])
 
   const stats = profile.getByRole('region', { name: 'Statistiques de base' })

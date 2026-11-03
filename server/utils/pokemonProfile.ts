@@ -1,4 +1,4 @@
-import type { AppLanguage } from '#shared/utils/pokeapi'
+import type { AppLanguage } from '#shared/utils/language'
 import { fetchPokemonProfile } from '../lib/pokeapi'
 
 /**
