@@ -38,3 +38,12 @@ jobs:
           STATIC_URL: ${{ vars.STATIC_URL }}
           EXPECTED_COMMIT: ${{ inputs.expected_commit }}
           EXTRA_URL: ${{ inputs.extra_url }}
+
+      # Fiches récupérées en HTML brut (sans JavaScript) sur les deux sites :
+      # bon title, vrai contenu (pas une coquille vide), identiques SSR / SSG.
+      - name: Comparer SSR et SSG sans JavaScript
+        if: always()
+        run: node scripts/compare-ssr-ssg.mjs
+        env:
+          PRODUCTION_URL: ${{ vars.PRODUCTION_URL }}
+          STATIC_URL: ${{ vars.STATIC_URL }}
