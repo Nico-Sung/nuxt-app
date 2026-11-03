@@ -141,5 +141,6 @@ export function toPokemonProfile(
         name: abilityName(a.ability.name, lang, formatName(a.ability.name)),
         hidden: a.is_hidden,
       })),
+    lang,
   }
 }

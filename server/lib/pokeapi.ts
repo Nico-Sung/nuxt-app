@@ -35,10 +35,32 @@ export class PokeApiUnavailableError extends Error {
 }
 
 /** GET JSON sur PokéAPI ; 404 -> `onNotFound()`, tout autre échec -> PokeApiUnavailableError. */
+/**
+ * Pendant la génération des fiches au build (~2 000 appels), une erreur
+ * passagère de PokéAPI ne doit pas faire échouer tout le déploiement :
+ * 2 nouvelles tentatives. À l'exécution, aucune (réponse rapide).
+ */
+const PRERENDER_RETRIES = 2
+
+const isTransient = (status: number) => status === 429 || status >= 500
+
+async function fetchWithRetry(url: string): Promise<Response> {
+  const retries = import.meta.prerender ? PRERENDER_RETRIES : 0
+  for (let attempt = 0; ; attempt++) {
+    try {
+      const response = await fetch(url)
+      if (!isTransient(response.status) || attempt >= retries) return response
+    } catch (cause) {
+      if (attempt >= retries) throw cause
+    }
+    await new Promise((resolve) => setTimeout(resolve, 500 * (attempt + 1)))
+  }
+}
+
 async function getJson<T>(url: string, onNotFound?: () => Error): Promise<T> {
   let response: Response
   try {
-    response = await fetch(url)
+    response = await fetchWithRetry(url)
   } catch (cause) {
     throw new PokeApiUnavailableError(`PokéAPI injoignable (${url})`, {
       cause,

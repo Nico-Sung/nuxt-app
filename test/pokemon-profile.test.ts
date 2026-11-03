@@ -121,6 +121,7 @@ describe('toPokemonProfile', () => {
         { name: 'Statik', hidden: false },
         { name: 'Paratonnerre', hidden: true },
       ],
+      lang: 'fr',
     })
   })
 
@@ -163,6 +164,7 @@ describe('toPokemonProfile : langue demandée', () => {
 
   it('en : nom et talents en anglais', () => {
     const profile = toPokemonProfile(PIKACHU, PIKACHU_SPECIES, 'en')
+    expect(profile.lang).toBe('en')
     expect(profile.name).toBe('Pikachu')
     expect(profile.abilities.map((a) => a.name)).toEqual([
       'Static',

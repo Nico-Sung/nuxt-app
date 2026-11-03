@@ -89,6 +89,8 @@ export interface PokemonProfile extends PokemonDetails {
   /** Description du Pokédex (français, sinon anglais) ; null si indisponible. */
   readonly description: string | null
   readonly abilities: readonly PokemonAbility[]
+  /** Langue des textes (nom, talents, catégorie, description). */
+  readonly lang: 'fr' | 'en'
 }
 
 /** Réponse brute de GET /pokemon/{name} avec les champs de la fiche. */

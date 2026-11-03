@@ -317,6 +317,16 @@ jobs:
         env:
           # Sans ça, Nitro détecte GitHub Actions et compile pour un serveur Node.
           NITRO_PRESET: vercel
+          # Fiches /pokemon/<nom> générées en HTML au build (liste via PokéAPI).
+          PRERENDER_POKEMON: '1'
+
+      - name: Fiches générées (avant l'envoi)
+        run: |
+          count=$(find .vercel/output/static/pokemon -name index.html | wc -l)
+          echo "$count fiches HTML générées"
+          test "$count" -ge 1025
+          grep -q 'Pikachu' .vercel/output/static/pokemon/pikachu/index.html
+          grep -q 'Statik' .vercel/output/static/pokemon/pikachu/index.html
 
       - name: Déploiement
         run: npx -y "$VERCEL_CLI" deploy --prebuilt --prod --token="$VERCEL_TOKEN"
@@ -331,7 +341,20 @@ jobs:
             # on réessaie au lieu d'échouer.
             commit=$(curl -s "$PRODUCTION_URL/api/health" | jq -r '.commit // empty' 2>/dev/null || true)
             echo "essai $i : en ligne = ${commit:-?}, attendu = $expected"
-            [ "$commit" = "$expected" ] && exit 0
+            [ "$commit" = "$expected" ] && break
+            [ "$i" = 20 ] && exit 1
             sleep 3
           done
-          exit 1
+
+      - name: Les fiches en ligne sont les fichiers générés
+        env:
+          PRODUCTION_URL: ${{ vars.PRODUCTION_URL }}
+        run: |
+          curl -s -D headers.txt -o pikachu.html "$PRODUCTION_URL/pokemon/pikachu"
+          grep -iE '^(HTTP|x-vercel-cache)' headers.txt
+          grep -qi '^HTTP/.* 200' headers.txt
+          grep -q 'Statik' pikachu.html
+          # un nom inconnu reste rendu par le serveur, avec un vrai 404
+          code=$(curl -s -o /dev/null -w '%{http_code}' -H 'Accept: text/html' "$PRODUCTION_URL/pokemon/inconnu")
+          echo "/pokemon/inconnu -> $code"
+          test "$code" = 404

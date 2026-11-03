@@ -1,4 +1,7 @@
 import process from 'node:process'
+import { fetchPokemonRoutes } from './build/pokemonRoutes'
+
+const POKEAPI_BASE = 'https://pokeapi.co/api/v2'
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
@@ -11,10 +14,37 @@ export default defineNuxtConfig({
     appVersion: process.env.npm_package_version ?? 'dev',
     appCommit: (process.env.GITHUB_SHA ?? 'dev').slice(0, 7),
     /** PokéAPI, appelée par le serveur Nuxt ; surchargeable avec NUXT_POKEAPI_BASE. */
-    pokeapiBase: 'https://pokeapi.co/api/v2',
+    pokeapiBase: POKEAPI_BASE,
     public: {
       /** URL de l'API Hono ; surchargeable avec NUXT_PUBLIC_API_BASE. */
       apiBase: 'http://localhost:3001',
+    },
+  },
+  nitro: {
+    prerender: {
+      // Seules les routes injectées ci-dessous ; pas d'exploration des liens.
+      crawlLinks: false,
+      // Doux pour PokéAPI : 2 appels par fiche (Pokémon + espèce).
+      concurrency: 8,
+      failOnError: true,
+    },
+  },
+  hooks: {
+    /**
+     * Fiches /pokemon/<nom> générées en HTML au build : uniquement si
+     * PRERENDER_POKEMON=1 (job Deploy). Build, E2E et dev restent dynamiques.
+     * PRERENDER_POKEMON_LIMIT=20 pour un essai local rapide.
+     */
+    async 'nitro:config'(nitroConfig) {
+      if (process.env.PRERENDER_POKEMON !== '1') return
+      const limit = Number(process.env.PRERENDER_POKEMON_LIMIT) || undefined
+      const routes = await fetchPokemonRoutes(POKEAPI_BASE, { limit })
+      nitroConfig.prerender ??= {}
+      nitroConfig.prerender.routes = [
+        ...(nitroConfig.prerender.routes ?? []),
+        ...routes,
+      ]
+      console.warn(`[prerender] ${routes.length} fiches Pokémon à générer`)
     },
   },
   i18n: {
