@@ -4,7 +4,12 @@ import { languageDetector, type LanguageVariables } from 'hono/language'
 import type { ContentfulStatusCode } from 'hono/utils/http-status'
 import { DEFAULT_LANGUAGE, LANGUAGES, translate } from './i18n.js'
 import { shortSha, VERSION } from './version.js'
-import { connect, PostgresWishlistStore } from './postgresStore.js'
+import { MemoryLikesStore, type LikesStore } from './likes.js'
+import {
+  connect,
+  PostgresLikesStore,
+  PostgresWishlistStore,
+} from './postgresStore.js'
 import {
   MAX_WISHLIST_SIZE,
   MemoryWishlistStore,
@@ -40,6 +45,8 @@ export interface AppOptions {
   commit: string
   /** Stockage de la liste ; une liste en mémoire neuve par défaut (isole les tests). */
   store?: WishlistStore
+  /** Likes ; en mémoire par défaut. */
+  likes?: LikesStore
   /**
    * Origine(s) autorisée(s) à appeler l'API depuis un navigateur (le front Nuxt),
    * séparées par des virgules : "http://localhost:3000,https://mon-front.app".
@@ -83,6 +90,7 @@ export function createApp({
   version,
   commit,
   store = new MemoryWishlistStore(),
+  likes = new MemoryLikesStore(),
   corsOrigin = DEFAULT_CORS_ORIGIN,
 }: AppOptions) {
   const app = new Hono<Env>()
@@ -155,6 +163,22 @@ export function createApp({
     return c.json(removed, 200)
   })
 
+  // ---------- likes ----------
+
+  app.get('/likes', async (c) => c.json(await likes.list(), 200))
+
+  app.post('/likes/:id', async (c) => {
+    const id = parseId(c.req.param('id'))
+    if (id === null) return fail(c, 400, 'invalid_id')
+    return c.json(await likes.like(id), 200)
+  })
+
+  app.delete('/likes/:id', async (c) => {
+    const id = parseId(c.req.param('id'))
+    if (id === null) return fail(c, 400, 'invalid_id')
+    return c.json(await likes.unlike(id), 200)
+  })
+
   app.notFound((c) => fail(c, 404, 'route_not_found'))
 
   // Base injoignable, erreur SQL inattendue… : 500 en JSON, détail dans les logs.
@@ -170,9 +194,22 @@ export function createApp({
 export function storeFromEnv(
   databaseUrl = process.env.DATABASE_URL,
 ): WishlistStore {
-  return databaseUrl
-    ? new PostgresWishlistStore(connect(databaseUrl))
-    : new MemoryWishlistStore()
+  return storesFromEnv(databaseUrl).store
+}
+
+/** Liste + likes : Postgres (une seule connexion partagée) ou mémoire. */
+export function storesFromEnv(databaseUrl = process.env.DATABASE_URL): {
+  store: WishlistStore
+  likes: LikesStore
+} {
+  if (!databaseUrl) {
+    return { store: new MemoryWishlistStore(), likes: new MemoryLikesStore() }
+  }
+  const sql = connect(databaseUrl)
+  return {
+    store: new PostgresWishlistStore(sql),
+    likes: new PostgresLikesStore(sql),
+  }
 }
 
 /** App configurée à partir de package.json et des variables GIT_SHA, CORS_ORIGIN, DATABASE_URL. */
@@ -180,5 +217,5 @@ export const app = createApp({
   version: VERSION,
   commit: shortSha(process.env.GIT_SHA),
   corsOrigin: process.env.CORS_ORIGIN || DEFAULT_CORS_ORIGIN,
-  store: storeFromEnv(),
+  ...storesFromEnv(),
 })

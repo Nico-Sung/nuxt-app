@@ -1,4 +1,5 @@
 import postgres from 'postgres'
+import type { LikesStore, PokemonLikes } from './likes.js'
 import type {
   AddResult,
   Pokemon,
@@ -75,6 +76,49 @@ export class PostgresWishlistStore implements WishlistStore {
       returning pokemon_id, name, sprite, added_at
     `
     return row ? toItem(row) : null
+  }
+}
+
+/**
+ * Likes stockés dans public.pokemon_likes (migration 001_likes.sql).
+ * Chaque +1/-1 est une seule requête SQL : pas de perte si deux visiteurs
+ * likent en même temps.
+ */
+export class PostgresLikesStore implements LikesStore {
+  readonly #sql: postgres.Sql
+
+  constructor(sql: postgres.Sql) {
+    this.#sql = sql
+  }
+
+  async list(): Promise<PokemonLikes[]> {
+    const rows = await this.#sql<{ pokemon_id: number; likes: number }[]>`
+      select pokemon_id, likes from public.pokemon_likes
+      where likes > 0
+      order by pokemon_id
+    `
+    return rows.map((r) => ({ pokemonId: r.pokemon_id, likes: r.likes }))
+  }
+
+  async like(pokemonId: number): Promise<PokemonLikes> {
+    const [row] = await this.#sql<{ likes: number }[]>`
+      insert into public.pokemon_likes (pokemon_id, likes)
+      values (${pokemonId}, 1)
+      on conflict (pokemon_id) do update
+        set likes = public.pokemon_likes.likes + 1, updated_at = now()
+      returning likes
+    `
+    return { pokemonId, likes: row?.likes ?? 0 }
+  }
+
+  async unlike(pokemonId: number): Promise<PokemonLikes> {
+    const [row] = await this.#sql<{ likes: number }[]>`
+      update public.pokemon_likes
+      set likes = greatest(likes - 1, 0), updated_at = now()
+      where pokemon_id = ${pokemonId}
+      returning likes
+    `
+    return { pokemonId, likes: row?.likes ?? 0 }
   }
 }
 

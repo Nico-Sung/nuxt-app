@@ -98,7 +98,10 @@ function onImageError() {
           <p class="num">{{ formatNumber(profile.id) }}</p>
           <h1>{{ profile.name }}</h1>
           <p v-if="profile.genus" class="genus">{{ profile.genus }}</p>
-          <TypeBadges class="types" :types="profile.types" />
+          <div class="badges">
+            <TypeBadges :types="profile.types" />
+            <LikeButton :pokemon-id="profile.id" :name="profile.name" />
+          </div>
 
           <p v-if="profile.description" class="description">
             {{ profile.description }}
@@ -203,7 +206,12 @@ h1 {
   color: var(--muted);
 }
 
-.types {
+.badges {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   margin-top: 10px;
 }
 

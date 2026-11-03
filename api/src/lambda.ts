@@ -1,6 +1,6 @@
 import { GetParameterCommand, SSMClient } from '@aws-sdk/client-ssm'
 import { handle, type LambdaContext, type LambdaEvent } from 'hono/aws-lambda'
-import { createApp, DEFAULT_CORS_ORIGIN, storeFromEnv } from './app.js'
+import { createApp, DEFAULT_CORS_ORIGIN, storesFromEnv } from './app.js'
 import { shortSha, VERSION } from './version.js'
 
 /**
@@ -33,7 +33,7 @@ async function createHandler() {
     version: VERSION,
     commit: shortSha(process.env.GIT_SHA),
     corsOrigin: process.env.CORS_ORIGIN || DEFAULT_CORS_ORIGIN,
-    store: storeFromEnv(await resolveDatabaseUrl()),
+    ...storesFromEnv(await resolveDatabaseUrl()),
   })
   return handle(app)
 }

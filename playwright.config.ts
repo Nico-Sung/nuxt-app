@@ -7,6 +7,7 @@ import {
   POKEAPI_PORT,
   POKEAPI_URL,
 } from './e2e/env'
+import { assertTestDatabase, E2E_DATABASE_URL } from './e2e/db'
 
 export default defineConfig({
   testDir: 'e2e',
@@ -35,14 +36,16 @@ export default defineConfig({
     },
     {
       name: 'API Hono',
-      command: 'npm --prefix api run build && npm --prefix api start',
+      // Vraie base Postgres de test : migrations appliquées, puis l'API.
+      command:
+        'npm --prefix api run build && node e2e/prepare-db.mjs && node api/dist/migrate.js && npm --prefix api start',
       url: `${API_URL}/health`,
       env: {
         PORT: String(API_PORT),
         CORS_ORIGIN: NUXT_URL,
-        // Toujours en mémoire : les tests vident la liste à chaque fois,
-        // ils ne doivent jamais toucher une vraie base (Supabase).
-        DATABASE_URL: '',
+        // Base locale *_test uniquement (garde-fou) : les tests la vident,
+        // ils ne doivent jamais toucher Supabase.
+        DATABASE_URL: assertTestDatabase(E2E_DATABASE_URL),
       },
       reuseExistingServer: false,
       timeout: 60_000,

@@ -52,6 +52,11 @@
     "statsUnavailable": "Stats indisponibles.",
     "retry": "Réessayer"
   },
+  "likes": {
+    "like": "Aimer {name} ({count})",
+    "unlike": "Ne plus aimer {name} ({count})",
+    "error": "Le like n’a pas pu être enregistré. Réessaie."
+  },
   "types": {
     "label": "Types",
     "normal": "Normal",

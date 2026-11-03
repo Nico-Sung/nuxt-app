@@ -85,14 +85,17 @@ function onImageError() {
         <span v-for="n in 6" :key="n" class="skeleton-row" />
       </div>
 
-      <button
-        type="button"
-        class="remove"
-        :aria-label="t('card.removeLabel', { name })"
-        @click="$emit('remove', pokemon.id)"
-      >
-        {{ t('card.remove') }}
-      </button>
+      <div class="actions">
+        <LikeButton :pokemon-id="pokemon.id" :name="name" />
+        <button
+          type="button"
+          class="remove"
+          :aria-label="t('card.removeLabel', { name })"
+          @click="$emit('remove', pokemon.id)"
+        >
+          {{ t('card.remove') }}
+        </button>
+      </div>
     </div>
   </article>
 </template>
@@ -191,9 +194,15 @@ function onImageError() {
   cursor: pointer;
 }
 
-.remove {
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
   margin-top: auto;
-  align-self: flex-start;
+}
+
+.remove {
   padding: 4px 0;
   border: 0;
   background: none;

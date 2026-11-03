@@ -52,6 +52,11 @@
     "statsUnavailable": "Stats unavailable.",
     "retry": "Retry"
   },
+  "likes": {
+    "like": "Like {name} ({count})",
+    "unlike": "Unlike {name} ({count})",
+    "error": "The like could not be saved. Try again."
+  },
   "types": {
     "label": "Types",
     "normal": "Normal",
