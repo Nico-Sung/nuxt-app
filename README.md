@@ -1,7 +1,7 @@
 # Couverture des tests
 
-Dernier rapport de `main` : commit [`b66f042`](https://github.com/Nico-Sung/nuxt-app/commit/b66f0425c8f558e2fc4b5c636e5f88675f9534bf), 2026-11-03 21:15 UTC.
-Rapports HTML complets (fichier par fichier, ligne par ligne) : artefacts `coverage-front-html` et `coverage-api-html` du [run](https://github.com/Nico-Sung/nuxt-app/actions/runs/41719876304).
+Dernier rapport de `main` : commit [`bd74242`](https://github.com/Nico-Sung/nuxt-app/commit/bd7424244d14a3cbcfc2b8dbb01d70cefe7188f3), 2026-11-03 21:21 UTC.
+Rapports HTML complets (fichier par fichier, ligne par ligne) : artefacts `coverage-front-html` et `coverage-api-html` du [run](https://github.com/Nico-Sung/nuxt-app/actions/runs/41720942178).
 
 ![coverage front](coverage-front.svg) ![coverage API](coverage-api.svg)
 
