@@ -521,6 +521,9 @@ jobs:
           fi
 
           cp badges/coverage-front.svg badges/coverage-api.svg "$site/"
+          # Vercel est relié au dépôt : sans ce fichier, il tenterait de
+          # construire le site depuis cette branche (qui ne contient que les badges).
+          printf '{\n  "git": { "deploymentEnabled": false }\n}\n' > "$site/vercel.json"
           {
             echo "# Couverture des tests"
             echo
